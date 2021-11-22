@@ -1,0 +1,11 @@
+-r prod.txt
+
+pytest
+pytest-cov
+pytest-random
+flake8
+flake8-isort
+isort
+black
+black-macchiato
+pdbpp
