@@ -4,10 +4,9 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 from feedcloud import settings
 
-# TODO Read the latest version of settings
-engine = sa.create_engine(settings.DATABASE_URL, echo=False)
+engine = None
 Base = declarative_base()
-Session = sessionmaker(bind=engine)
+Session = sessionmaker()
 
 
 class User(Base):
@@ -58,13 +57,23 @@ class Entry(Base):
     feed = relationship("Feed", back_populates="entries")
 
 
+def configure():
+    global engine
+    if not engine:
+        engine = sa.create_engine(settings.DATABASE_URL, echo=False)
+        Session.configure(bind=engine)
+
+
 def drop_all():
+    configure()
     Base.metadata.drop_all(engine)
 
 
 def create_all():
+    configure()
     Base.metadata.create_all(engine)
 
 
 def get_session() -> sqlalchemy.orm.Session:
+    configure()
     return Session()

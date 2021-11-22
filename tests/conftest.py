@@ -1,11 +1,13 @@
 import pytest
 
-from feedcloud import database
+from feedcloud import database, settings
 
 
 @pytest.fixture(scope="session", autouse=True)
 def configure_settings():
-    pass
+    settings.update_settings_from_dict(
+        {"DATABASE_URL": "postgresql://test:test@localhost:5432/feedcloud"}
+    )
 
 
 @pytest.fixture()

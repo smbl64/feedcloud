@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict
 
 from feedcloud import constants
 
-DATABASE_URL = "postgresql://test:test@localhost:5432/feedcloud"
+DATABASE_URL = ""
 
 
 def update_settings_from_env_vars() -> None:
