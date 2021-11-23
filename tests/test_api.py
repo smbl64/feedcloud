@@ -143,7 +143,7 @@ def test_list_entries_for_a_feed(db_session, client, test_user):
 def test_filter_feed_entries_by_status(db_session, client, test_user):
     headers = authenticate(client, test_user)
 
-    # Create some feeds
+    # Create the feed
     feed = database.Feed(user_id=test_user.id, url="feed-1")
     db_session.add(feed)
     db_session.flush()
@@ -242,3 +242,52 @@ def test_change_entry_status(db_session, client, test_user):
 
     db_session.refresh(target_entry)
     assert target_entry.status == "unread"
+
+
+def test_get_all_entries(db_session, client, test_user):
+    headers = authenticate(client, test_user)
+
+    # Create some feeds
+    feed1 = database.Feed(user_id=test_user.id, url="feed-1")
+    feed2 = database.Feed(user_id=test_user.id, url="feed-2")
+    db_session.add_all([feed1, feed2])
+    db_session.flush()
+
+    # Create some entries for those two feeds
+    entry_data = [
+        ("entry 1", feed1.id, "read"),
+        ("entry 2", feed1.id, "unread"),
+        ("entry 3", feed2.id, "read"),
+        ("entry 4", feed2.id, "unread"),
+    ]
+    start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
+
+    for hours, (title, feed_id, status) in enumerate(entry_data):
+        # Each entry is published 1 hour after the previous one
+        entry_date = start_dt + datetime.timedelta(hours=hours)
+
+        entry = database.Entry(
+            title=title,
+            feed_id=feed_id,
+            published_at=entry_date,
+            original_id="",
+            summary="",
+            link="",
+            status=status,
+        )
+        db_session.add(entry)
+
+    db_session.commit()
+
+    test_table = [
+        ("read", ["entry 3", "entry 1"]),
+        ("unread", ["entry 4", "entry 2"]),
+        (None, ["entry 4", "entry 3", "entry 2", "entry 1"]),
+    ]
+
+    for status, expected_titles in test_table:
+        url = flask.url_for("get_entries", status=status)
+        resp = client.get(url, headers=headers)
+        assert resp.status_code == 200
+        titles = [e["title"] for e in resp.json["entries"]]
+        assert titles == expected_titles

@@ -141,7 +141,7 @@ def get_feed_entries(feed_id):
 
     try:
         entries = services.get_entries(username, feed_id=feed_id, entry_status=status)
-    except exceptions.AuthorizationFailedError as e:
+    except (exceptions.AuthorizationFailedError, ValueError) as e:
         return make_error(str(e))
 
     schema = schemas.EntryListSchema()
@@ -168,6 +168,21 @@ def mark_entry_as_read(entry_id):
         return "", 200
     else:
         return "", 404
+
+
+@app.route("/entries", methods=["GET"])
+@jwt_required()
+def get_entries():
+    username = get_jwt_identity()
+    status = flask.request.args.get("status")
+
+    try:
+        entries = services.get_entries(username, entry_status=status)
+    except (exceptions.AuthorizationFailedError, ValueError) as e:
+        return make_error(str(e))
+
+    schema = schemas.EntryListSchema()
+    return schema.dump(dict(entries=entries)), 200
 
 
 @app.route("/swagger.json")

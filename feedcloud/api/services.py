@@ -82,6 +82,9 @@ def get_feeds(username: str) -> List[Feed]:
 def get_entries(
     username: str, *, feed_id: Optional[int] = None, entry_status: Optional[str] = None
 ) -> List[Entry]:
+    if entry_status and entry_status not in database.Entry.STATUS_LIST:
+        raise ValueError(f"Invalid status: {entry_status}")
+
     with database.get_session() as session:
         user = find_user(username, session)
 
