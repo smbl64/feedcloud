@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import apispec
 import flask
 import flask_cors
@@ -5,8 +7,9 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 get_jwt_identity, jwt_required)
+from marshmallow.exceptions import ValidationError
 
-from . import schemas, services
+from . import exceptions, schemas, services
 
 app = flask.Flask(__name__)
 flask_cors.CORS(app)
@@ -58,18 +61,37 @@ def authenticate():
     password = body["password"]
 
     if not services.authenticate_user(username, password):
-        resp_schema = schemas.ErrorSchema()
-        return resp_schema.dump({"message": "Invalid username or password"}), 401
+        return make_error("Invalid username or password")
 
     response = dict(token=create_access_token(identity=username))
     return schemas.AuthResponseSchema().dump(response)
 
 
+def make_error(msg: str) -> Tuple[dict, int]:
+    resp_schema = schemas.ErrorSchema()
+    return resp_schema.dump({"message": msg}), 401
+
+
 @app.route("/feeds/", methods=["POST"])
 @jwt_required()
 def register_feed():
+    schema = schemas.FeedRegisterSchema()
+
+    try:
+        body = schema.load(flask.request.json)
+    except ValidationError as err:
+        return flask.jsonify(err.messages), 400
+
     username = get_jwt_identity()
-    return "hello world!"
+    try:
+        created = services.register_feed(username, body["url"])
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    if created:
+        return "Created", 201
+    else:
+        return "Feed already exists", 409
 
 
 @app.route("/swagger.json")
@@ -81,3 +103,4 @@ def create_swagger_spec():
 # Register endpoints with the API Spec
 with app.test_request_context():
     spec.path(view=authenticate)
+    spec.path(view=register_feed)

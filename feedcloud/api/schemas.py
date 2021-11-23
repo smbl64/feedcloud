@@ -12,3 +12,7 @@ class AuthResponseSchema(Schema):
 
 class ErrorSchema(Schema):
     message = fields.String(required=True)
+
+
+class FeedRegisterSchema(Schema):
+    url = fields.String(required=True)

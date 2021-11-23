@@ -1,7 +1,6 @@
-import flask
 import pytest
 
-from feedcloud import api, database, settings
+from feedcloud import api, database, helpers, settings
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,3 +43,12 @@ def push_request_context(request, app):
         ctx.pop()
 
     request.addfinalizer(teardown)
+
+
+@pytest.fixture
+def test_user(db_session):
+    hash = helpers.hash_password("test")
+    user = database.User(username="test", password_hash=hash)
+    db_session.add(user)
+    db_session.commit()
+    return user
