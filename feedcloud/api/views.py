@@ -79,7 +79,7 @@ def make_error(msg: str) -> Tuple[dict, int]:
 @app.route("/feeds/", methods=["POST"])
 @jwt_required()
 def register_feed():
-    schema = schemas.FeedRegisterSchema()
+    schema = schemas.MinimalFeedSchema()
 
     try:
         body = schema.load(flask.request.json)
@@ -101,7 +101,7 @@ def register_feed():
 @app.route("/feeds/", methods=["DELETE"])
 @jwt_required()
 def unregister_feed():
-    schema = schemas.FeedRegisterSchema()
+    schema = schemas.MinimalFeedSchema()
 
     try:
         body = schema.load(flask.request.json)
@@ -118,6 +118,19 @@ def unregister_feed():
         return "", 200
     else:
         return "", 404
+
+
+@app.route("/feeds/", methods=["GET"])
+@jwt_required()
+def get_feeds():
+    username = get_jwt_identity()
+    try:
+        feeds = services.get_feeds(username)
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    schema = schemas.FeedListSchema()
+    return schema.dump(dict(feeds=feeds)), 200
 
 
 @app.route("/swagger.json")

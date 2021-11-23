@@ -14,5 +14,14 @@ class ErrorSchema(Schema):
     message = fields.String(required=True)
 
 
-class FeedRegisterSchema(Schema):
+class MinimalFeedSchema(Schema):
     url = fields.String(required=True)
+
+
+class FeedSchema(Schema):
+    id = fields.Integer(required=True)
+    url = fields.String(required=True)
+
+
+class FeedListSchema(Schema):
+    feeds = fields.Nested(FeedSchema, many=True)

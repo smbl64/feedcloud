@@ -62,3 +62,25 @@ def test_unregister_feed(db_session, client, test_user):
     resp = client.delete(url, json=dict(url="http://bla"), headers=headers)
     assert resp.status_code == 200
     assert db_session.query(database.Feed).count() == 0
+
+
+def test_get_feeds(db_session, client, test_user):
+    another_user = database.User(username="another", password_hash="...")
+    db_session.add(another_user)
+    db_session.commit()
+
+    headers = authenticate(client, test_user)
+
+    # Create some feeds
+    db_session.add_all([
+        database.Feed(user_id=test_user.id, url="user-1-feed-1"),
+        database.Feed(user_id=test_user.id, url="user-1-feed-2"),
+        database.Feed(user_id=another_user.id, url="user-2-feed-1"),
+    ])
+    db_session.commit()
+
+    url = flask.url_for("get_feeds")
+    resp = client.get(url, headers=headers)
+    assert resp.status_code == 200
+    response_urls = {f["url"] for f in resp.json["feeds"]}
+    assert response_urls == {"user-1-feed-1", "user-1-feed-2"}

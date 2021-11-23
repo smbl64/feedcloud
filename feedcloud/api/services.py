@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import sqlalchemy.orm
 
@@ -60,3 +60,18 @@ def unregister_feed(username: str, url: str) -> bool:
         session.delete(feed)
         session.commit()
         return True
+
+
+def get_feeds(username: str) -> List[Feed]:
+    with database.get_session() as session:
+        user = find_user(username, session)
+        if not user:
+            raise exceptions.AuthorizationFailedError("User not found")
+
+        feeds = (
+            session.query(Feed)
+            .filter(Feed.user_id == user.id)
+            .all()
+        )
+
+        return feeds
