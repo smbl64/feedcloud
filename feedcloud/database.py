@@ -11,9 +11,7 @@ Session = sessionmaker()
 
 class User(Base):
     __tablename__ = "user"
-    __tableargs__ = [
-        sa.UniqueConstraint("username", name="username_idx")
-    ]
+    __tableargs__ = [sa.UniqueConstraint("username", name="username_idx")]
 
     id = sa.Column(sa.Integer, primary_key=True)
     username = sa.Column(sa.Text, nullable=False)

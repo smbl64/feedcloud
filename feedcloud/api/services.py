@@ -70,11 +70,7 @@ def get_feeds(username: str) -> List[Feed]:
         if not user:
             raise exceptions.AuthorizationFailedError("User not found")
 
-        feeds = (
-            session.query(Feed)
-            .filter(Feed.user_id == user.id)
-            .all()
-        )
+        feeds = session.query(Feed).filter(Feed.user_id == user.id).all()
 
         return feeds
 

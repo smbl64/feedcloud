@@ -82,11 +82,13 @@ def test_get_feeds(db_session, client, test_user):
     headers = authenticate(client, test_user)
 
     # Create some feeds
-    db_session.add_all([
-        database.Feed(user_id=test_user.id, url="user-1-feed-1"),
-        database.Feed(user_id=test_user.id, url="user-1-feed-2"),
-        database.Feed(user_id=another_user.id, url="user-2-feed-1"),
-    ])
+    db_session.add_all(
+        [
+            database.Feed(user_id=test_user.id, url="user-1-feed-1"),
+            database.Feed(user_id=test_user.id, url="user-1-feed-2"),
+            database.Feed(user_id=another_user.id, url="user-2-feed-1"),
+        ]
+    )
     db_session.commit()
 
     url = flask.url_for("get_feeds")

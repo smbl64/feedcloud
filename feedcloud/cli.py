@@ -69,6 +69,7 @@ def create_user(username: str, password: str, *, is_admin: bool) -> None:
         session.add(user)
         session.commit()
 
+
 # @cli.command()
 # def woot():
 #     with database.get_session() as session:

@@ -63,7 +63,9 @@ def test_user(db_session):
     username = "test"
     password = "test"
     user = database.User(
-        username=username, password_hash=helpers.hash_password(password), is_admin=False,
+        username=username,
+        password_hash=helpers.hash_password(password),
+        is_admin=False,
     )
     db_session.add(user)
     db_session.commit()
