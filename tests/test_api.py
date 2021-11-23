@@ -223,12 +223,12 @@ def test_change_entry_status(db_session, client, test_user):
     db_session.commit()
 
     # User doesn't have access to this entry
-    url = flask.url_for("mark_entry_as_read", entry_id=unaccessible_entry.id)
+    url = flask.url_for("change_entry_status", entry_id=unaccessible_entry.id)
     resp = client.put(url, json={"status": "read"}, headers=headers)
     assert resp.status_code == 404
 
     # User can mark her own entry as 'read'
-    url = flask.url_for("mark_entry_as_read", entry_id=target_entry.id)
+    url = flask.url_for("change_entry_status", entry_id=target_entry.id)
     resp = client.put(url, json={"status": "read"}, headers=headers)
     assert resp.status_code == 200
 
@@ -236,7 +236,7 @@ def test_change_entry_status(db_session, client, test_user):
     assert target_entry.status == "read"
 
     # User can change the status back to 'unread'
-    url = flask.url_for("mark_entry_as_read", entry_id=target_entry.id)
+    url = flask.url_for("change_entry_status", entry_id=target_entry.id)
     resp = client.put(url, json={"status": "unread"}, headers=headers)
     assert resp.status_code == 200
 

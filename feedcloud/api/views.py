@@ -150,7 +150,7 @@ def get_feed_entries(feed_id):
 
 @app.route("/entries/<entry_id>", methods=["PUT"])
 @jwt_required()
-def mark_entry_as_read(entry_id):
+def change_entry_status(entry_id):
     username = get_jwt_identity()
     schema = schemas.EntryStatusChangeRequestSchema()
     try:
@@ -197,3 +197,6 @@ with app.test_request_context():
     spec.path(view=register_feed)
     spec.path(view=unregister_feed)
     spec.path(view=get_feeds)
+    spec.path(view=get_feed_entries)
+    spec.path(view=change_entry_status)
+    spec.path(view=get_entries)
