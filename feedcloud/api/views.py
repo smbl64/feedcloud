@@ -56,9 +56,13 @@ def authenticate():
                 schema: ErrorSchema
     """
     schema = schemas.AuthRequestSchema()
-    body = schema.load(flask.request.json)
-    username = body["username"]
-    password = body["password"]
+
+    try:
+        body = schema.load(flask.request.json)
+        username = body["username"]
+        password = body["password"]
+    except ValidationError as err:
+        return flask.jsonify(err.messages), 400
 
     if not services.authenticate_user(username, password):
         return make_error("Invalid username or password")
@@ -94,6 +98,28 @@ def register_feed():
         return "Feed already exists", 409
 
 
+@app.route("/feeds/", methods=["DELETE"])
+@jwt_required()
+def unregister_feed():
+    schema = schemas.FeedRegisterSchema()
+
+    try:
+        body = schema.load(flask.request.json)
+    except ValidationError as err:
+        return flask.jsonify(err.messages), 400
+
+    username = get_jwt_identity()
+    try:
+        deleted = services.unregister_feed(username, body["url"])
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    if deleted:
+        return "", 200
+    else:
+        return "", 404
+
+
 @app.route("/swagger.json")
 def create_swagger_spec():
     response = flask.jsonify(spec.to_dict())
@@ -104,3 +130,4 @@ def create_swagger_spec():
 with app.test_request_context():
     spec.path(view=authenticate)
     spec.path(view=register_feed)
+    spec.path(view=unregister_feed)

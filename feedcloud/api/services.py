@@ -40,3 +40,23 @@ def register_feed(username: str, url: str) -> bool:
         session.add(feed)
         session.commit()
         return True
+
+
+def unregister_feed(username: str, url: str) -> bool:
+    with database.get_session() as session:
+        user = find_user(username, session)
+        if not user:
+            raise exceptions.AuthorizationFailedError("User not found")
+
+        feed = (
+            session.query(Feed)
+            .filter(Feed.url == url, Feed.user_id == user.id)
+            .one_or_none()
+        )
+
+        if not feed:
+            return False
+
+        session.delete(feed)
+        session.commit()
+        return True

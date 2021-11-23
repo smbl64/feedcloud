@@ -42,6 +42,23 @@ def test_register_feed(db_session, client, test_user):
     assert resp.status_code == 409
 
     feeds = db_session.query(database.Feed).all()
-
     assert len(feeds) == 1
     assert feeds[0].url == "http://bla"
+
+
+def test_unregister_feed(db_session, client, test_user):
+    headers = authenticate(client, test_user)
+
+    # 404; Feed doesn't exist yet
+    url = flask.url_for("unregister_feed")
+    resp = client.delete(url, json=dict(url="http://bla"), headers=headers)
+    assert resp.status_code == 404
+
+    # Create the feed
+    db_session.add(database.Feed(user_id=test_user.id, url="http://bla"))
+    db_session.commit()
+
+    # Try again
+    resp = client.delete(url, json=dict(url="http://bla"), headers=headers)
+    assert resp.status_code == 200
+    assert db_session.query(database.Feed).count() == 0
