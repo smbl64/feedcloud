@@ -50,6 +50,7 @@ class Entry(Base):
     summary = sa.Column(sa.Text, nullable=False)
     link = sa.Column(sa.Text, nullable=False)
     saved_at = sa.Column(sa.DateTime, nullable=False, server_default=sa.func.now())
+    published_at = sa.Column(sa.DateTime, nullable=False)
 
     feed_id = sa.Column(
         sa.Integer, sa.ForeignKey("feed.id", ondelete="CASCADE"), nullable=False

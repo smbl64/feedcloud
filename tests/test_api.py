@@ -1,6 +1,8 @@
+import datetime
+
 import flask
 
-from feedcloud import database, helpers
+from feedcloud import database
 
 
 def test_authenticate_user(client, test_user):
@@ -92,3 +94,47 @@ def test_get_feeds(db_session, client, test_user):
     assert resp.status_code == 200
     response_urls = {f["url"] for f in resp.json["feeds"]}
     assert response_urls == {"user-1-feed-1", "user-1-feed-2"}
+
+
+def test_list_entries_for_a_feed(db_session, client, test_user):
+    headers = authenticate(client, test_user)
+
+    # Create some feeds
+    feed1 = database.Feed(user_id=test_user.id, url="feed-1")
+    feed2 = database.Feed(user_id=test_user.id, url="feed-2")
+    db_session.add_all([feed1, feed2])
+    db_session.flush()
+
+    # Create some entries for those two feeds
+    entry_data = [
+        ("entry 1", feed1.id),
+        ("entry 2", feed1.id),
+        ("entry 3", feed2.id),
+        ("entry 4", feed2.id),
+    ]
+    start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
+
+    for hours, (title, feed_id) in enumerate(entry_data):
+        # Each entry is published 1 hour after the previous one
+        entry_date = start_dt + datetime.timedelta(hours=hours)
+
+        entry = database.Entry(
+            title=title,
+            feed_id=feed_id,
+            published_at=entry_date,
+            original_id="",
+            summary="",
+            link="",
+        )
+        db_session.add(entry)
+
+    db_session.commit()
+
+    # Fetch entries for feed 1
+    url = flask.url_for("get_feed_entries", feed_id=feed1.id)
+    resp = client.get(url, headers=headers)
+    assert resp.status_code == 200
+
+    # Make sure that we get the entries for feed 1 in descending order by published date
+    titles = [e["title"] for e in resp.json["entries"]]
+    assert titles == ["entry 2", "entry 1"]

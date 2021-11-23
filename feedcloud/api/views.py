@@ -133,6 +133,19 @@ def get_feeds():
     return schema.dump(dict(feeds=feeds)), 200
 
 
+@app.route("/feeds/<feed_id>/entries", methods=["GET"])
+@jwt_required()
+def get_feed_entries(feed_id):
+    username = get_jwt_identity()
+    try:
+        entries = services.get_feed_entries(username, feed_id)
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    schema = schemas.EntryListSchema()
+    return schema.dump(dict(entries=entries)), 200
+
+
 @app.route("/swagger.json")
 def create_swagger_spec():
     response = flask.jsonify(spec.to_dict())
@@ -144,3 +157,4 @@ with app.test_request_context():
     spec.path(view=authenticate)
     spec.path(view=register_feed)
     spec.path(view=unregister_feed)
+    spec.path(view=get_feeds)

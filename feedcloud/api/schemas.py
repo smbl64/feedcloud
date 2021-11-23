@@ -25,3 +25,17 @@ class FeedSchema(Schema):
 
 class FeedListSchema(Schema):
     feeds = fields.Nested(FeedSchema, many=True)
+
+
+class EntrySchema(Schema):
+    id = fields.Integer()
+    original_id = fields.String()
+    title = fields.String()
+    summary = fields.String()
+    link = fields.String()
+    published_at = fields.DateTime()
+    feed_id = fields.Integer()
+
+
+class EntryListSchema(Schema):
+    entries = fields.Nested(EntrySchema, many=True)

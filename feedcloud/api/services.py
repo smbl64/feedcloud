@@ -75,3 +75,20 @@ def get_feeds(username: str) -> List[Feed]:
         )
 
         return feeds
+
+
+def get_feed_entries(username: str, feed_id: int) -> List[Entry]:
+    with database.get_session() as session:
+        user = find_user(username, session)
+        if not user:
+            raise exceptions.AuthorizationFailedError("User not found")
+
+        entries = (
+            session.query(Entry)
+            .join(Feed, Entry.feed_id == Feed.id)
+            .filter(Feed.id == feed_id, Feed.user_id == user.id)
+            .order_by(Entry.published_at.desc())
+            .all()
+        )
+
+        return entries
