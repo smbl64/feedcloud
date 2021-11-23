@@ -18,6 +18,10 @@ def clean_db():
 
 @pytest.fixture()
 def db_session(clean_db):
+    """
+    Create a SQLAlchemy database session.
+    Session will be closed automatically when the test is done.
+    """
     session = database.get_session()
     yield session
     session.close()
@@ -30,12 +34,21 @@ def app():
 
 @pytest.fixture
 def client(app):
+    """
+    Create a Flask test client for calling endpoints.
+    """
     with app.test_client() as client:
         yield client
 
 
 @pytest.fixture(autouse=True)
 def push_request_context(request, app):
+    """
+    Push a Flask app context to each test so functions like `url_for` become
+    available.
+
+    This fixture will be used automatically before each test case (`autouse=True`).
+    """
     ctx = app.test_request_context()
     ctx.push()
 
@@ -47,8 +60,12 @@ def push_request_context(request, app):
 
 @pytest.fixture
 def test_user(db_session):
-    hash = helpers.hash_password("test")
-    user = database.User(username="test", password_hash=hash)
+    username = "test"
+    password = "test"
+    user = database.User(
+        username=username, password_hash=helpers.hash_password(password), is_admin=False,
+    )
     db_session.add(user)
     db_session.commit()
+
     return user
