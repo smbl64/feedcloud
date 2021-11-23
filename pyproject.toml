@@ -1,4 +1,10 @@
+[tool.black]
+line-length = 89
+
 [tool.isort]
 profile = "black"
 src_paths = ["feedcloud", "tests"]
 multi_line_output = 3
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
