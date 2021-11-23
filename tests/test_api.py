@@ -3,8 +3,16 @@ import flask
 from feedcloud import database, helpers
 
 
-def test_auth(db_session, client, test_user):
+def test_authenticate_user(client, test_user):
     url = flask.url_for("authenticate")
+    # Try with a non-existing user
+    resp = client.post(
+        url,
+        json=dict(username="I don't exist", password="invalid password"),
+    )
+    assert resp.status_code == 401
+
+    # Try with a invalid password
     resp = client.post(
         url,
         json=dict(username=test_user.username, password="invalid password"),
