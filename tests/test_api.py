@@ -138,3 +138,48 @@ def test_list_entries_for_a_feed(db_session, client, test_user):
     # Make sure that we get the entries for feed 1 in descending order by published date
     titles = [e["title"] for e in resp.json["entries"]]
     assert titles == ["entry 2", "entry 1"]
+
+
+def test_change_entry_status(db_session, client, test_user):
+    another_user = database.User(username="another", password_hash="...")
+    db_session.add(another_user)
+    db_session.commit()
+
+    headers = authenticate(client, test_user)
+
+    # Create some feeds
+    feed = database.Feed(user_id=test_user.id, url="feed")
+    feed_another_user = database.Feed(user_id=another_user.id, url="feed-another-user")
+    db_session.add_all([feed, feed_another_user])
+    db_session.flush()
+
+    # Create some entries for those two feeds
+    target_entry = database.Entry(
+        title="target entry",
+        feed_id=feed.id,
+        published_at=datetime.datetime.now(),
+        original_id="",
+        summary="",
+        link="",
+    )
+    unaccessible_entry = database.Entry(
+        title="unaccessible entry",
+        feed_id=feed_another_user.id,  # <- belongs to another user
+        published_at=datetime.datetime.now(),
+        original_id="",
+        summary="",
+        link="",
+    )
+    db_session.add_all([target_entry, unaccessible_entry])
+    db_session.commit()
+
+    url = flask.url_for("mark_entry_as_read", entry_id=unaccessible_entry.id)
+    resp = client.put(url, json={"status": "read"}, headers=headers)
+    assert resp.status_code == 404
+
+    url = flask.url_for("mark_entry_as_read", entry_id=target_entry.id)
+    resp = client.put(url, json={"status": "read"}, headers=headers)
+    assert resp.status_code == 200
+
+    db_session.refresh(target_entry)
+    assert target_entry.status == "read"

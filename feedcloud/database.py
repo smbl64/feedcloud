@@ -38,6 +38,10 @@ class Feed(Base):
 
 
 class Entry(Base):
+    UNREAD = "unread"
+    READ = "read"
+    STATUS_LIST = (UNREAD, READ)
+
     __tablename__ = "entry"
     __tableargs__ = [
         sa.UniqueConstraint("original_id", "feed_id", name="original_id_feed_idx")
@@ -51,6 +55,8 @@ class Entry(Base):
     link = sa.Column(sa.Text, nullable=False)
     saved_at = sa.Column(sa.DateTime, nullable=False, server_default=sa.func.now())
     published_at = sa.Column(sa.DateTime, nullable=False)
+
+    status = sa.Column(sa.Text, nullable=False, default=UNREAD)
 
     feed_id = sa.Column(
         sa.Integer, sa.ForeignKey("feed.id", ondelete="CASCADE"), nullable=False

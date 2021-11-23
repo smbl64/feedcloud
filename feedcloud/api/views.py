@@ -146,6 +146,28 @@ def get_feed_entries(feed_id):
     return schema.dump(dict(entries=entries)), 200
 
 
+@app.route("/entries/<entry_id>", methods=["PUT"])
+@jwt_required()
+def mark_entry_as_read(entry_id):
+    username = get_jwt_identity()
+    schema = schemas.EntryStatusChangeRequestSchema()
+    try:
+        body = schema.load(flask.request.json)
+    except ValidationError as err:
+        return flask.jsonify(err.messages), 400
+
+    username = get_jwt_identity()
+    try:
+        changed = services.change_entry_status(username, entry_id, body["status"])
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    if changed:
+        return "", 200
+    else:
+        return "", 404
+
+
 @app.route("/swagger.json")
 def create_swagger_spec():
     response = flask.jsonify(spec.to_dict())

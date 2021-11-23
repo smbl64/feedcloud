@@ -1,4 +1,7 @@
 from marshmallow import Schema, fields
+from marshmallow.validate import OneOf
+
+from feedcloud import database
 
 
 class AuthRequestSchema(Schema):
@@ -39,3 +42,7 @@ class EntrySchema(Schema):
 
 class EntryListSchema(Schema):
     entries = fields.Nested(EntrySchema, many=True)
+
+
+class EntryStatusChangeRequestSchema(Schema):
+    status = fields.String(required=True, validate=OneOf(database.Entry.STATUS_LIST))

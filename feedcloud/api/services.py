@@ -8,13 +8,19 @@ from feedcloud.database import Entry, Feed, User
 from . import exceptions
 
 
-def find_user(username: str, session: sqlalchemy.orm.Session) -> Optional[User]:
-    return session.query(User).filter(User.username == username).one_or_none()
+def find_user(
+    username: str, session: sqlalchemy.orm.Session, raise_error_if_missing: bool = True
+) -> Optional[User]:
+    user = session.query(User).filter(User.username == username).one_or_none()
+    if not user and raise_error_if_missing:
+        raise exceptions.AuthorizationFailedError("User not found")
+
+    return user
 
 
 def authenticate_user(username: str, password: str) -> bool:
     with database.get_session() as session:
-        user = find_user(username, session)
+        user = find_user(username, session, raise_error_if_missing=False)
         if not user:
             return False
 
@@ -24,8 +30,6 @@ def authenticate_user(username: str, password: str) -> bool:
 def register_feed(username: str, url: str) -> bool:
     with database.get_session() as session:
         user = find_user(username, session)
-        if not user:
-            raise exceptions.AuthorizationFailedError("User not found")
 
         feed = (
             session.query(Feed)
@@ -45,8 +49,6 @@ def register_feed(username: str, url: str) -> bool:
 def unregister_feed(username: str, url: str) -> bool:
     with database.get_session() as session:
         user = find_user(username, session)
-        if not user:
-            raise exceptions.AuthorizationFailedError("User not found")
 
         feed = (
             session.query(Feed)
@@ -80,8 +82,6 @@ def get_feeds(username: str) -> List[Feed]:
 def get_feed_entries(username: str, feed_id: int) -> List[Entry]:
     with database.get_session() as session:
         user = find_user(username, session)
-        if not user:
-            raise exceptions.AuthorizationFailedError("User not found")
 
         entries = (
             session.query(Entry)
@@ -92,3 +92,22 @@ def get_feed_entries(username: str, feed_id: int) -> List[Entry]:
         )
 
         return entries
+
+
+def change_entry_status(username: str, entry_id: int, new_status: str) -> bool:
+    with database.get_session() as session:
+        user = find_user(username, session)
+
+        entry = (
+            session.query(Entry)
+            .join(Feed, Entry.feed_id == Feed.id)
+            .filter(Feed.user_id == user.id, Entry.id == entry_id)
+            .one_or_none()
+        )
+
+        if not entry:
+            return False
+
+        entry.status = new_status
+        session.commit()
+        return True
