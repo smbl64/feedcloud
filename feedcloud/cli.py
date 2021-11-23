@@ -57,7 +57,7 @@ def create_user(username: str, password: str, *, is_admin: bool) -> None:
     User = database.User
 
     with database.get_session() as session:
-        if session.query(User.username == username).count() != 0:
+        if session.query(User).filter(User.username == username).count() != 0:
             click.echo(f"User '{username}' already exists.")
             return
 
