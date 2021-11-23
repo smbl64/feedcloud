@@ -8,3 +8,5 @@ marshmallow
 flask-cors
 apispec[marshmallow]
 apispec-webframeworks
+dramatiq[rabbitmq, watch]
+apscheduler

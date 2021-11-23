@@ -11,3 +11,8 @@ services:
       - ./data/postgres:/var/lib/postgres/data
     ports:
       - "5432:5432"
+  rabbit-mq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
