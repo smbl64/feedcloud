@@ -79,19 +79,26 @@ def get_feeds(username: str) -> List[Feed]:
         return feeds
 
 
-def get_feed_entries(username: str, feed_id: int) -> List[Entry]:
+def get_entries(
+    username: str, *, feed_id: Optional[int] = None, entry_status: Optional[str] = None
+) -> List[Entry]:
     with database.get_session() as session:
         user = find_user(username, session)
 
-        entries = (
+        query = (
             session.query(Entry)
             .join(Feed, Entry.feed_id == Feed.id)
-            .filter(Feed.id == feed_id, Feed.user_id == user.id)
+            .filter(Feed.user_id == user.id)
             .order_by(Entry.published_at.desc())
-            .all()
         )
 
-        return entries
+        if feed_id:
+            query = query.filter(Feed.id == feed_id)
+
+        if entry_status:
+            query = query.filter(Entry.status == entry_status)
+
+        return query.all()
 
 
 def change_entry_status(username: str, entry_id: int, new_status: str) -> bool:

@@ -137,8 +137,10 @@ def get_feeds():
 @jwt_required()
 def get_feed_entries(feed_id):
     username = get_jwt_identity()
+    status = flask.request.args.get("status")
+
     try:
-        entries = services.get_feed_entries(username, feed_id)
+        entries = services.get_entries(username, feed_id=feed_id, entry_status=status)
     except exceptions.AuthorizationFailedError as e:
         return make_error(str(e))
 

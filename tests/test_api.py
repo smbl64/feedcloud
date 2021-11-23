@@ -140,6 +140,55 @@ def test_list_entries_for_a_feed(db_session, client, test_user):
     assert titles == ["entry 2", "entry 1"]
 
 
+def test_filter_feed_entries_by_status(db_session, client, test_user):
+    headers = authenticate(client, test_user)
+
+    # Create some feeds
+    feed = database.Feed(user_id=test_user.id, url="feed-1")
+    db_session.add(feed)
+    db_session.flush()
+
+    # Create some entries for those two feeds
+    entry_data = [
+        ("entry 1", "read"),
+        ("entry 2", "read"),
+        ("entry 3", "unread"),
+        ("entry 4", "unread"),
+    ]
+    start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
+
+    for hours, (title, status) in enumerate(entry_data):
+        # Each entry is published 1 hour after the previous one
+        entry_date = start_dt + datetime.timedelta(hours=hours)
+
+        entry = database.Entry(
+            title=title,
+            feed_id=feed.id,
+            published_at=entry_date,
+            original_id="",
+            summary="",
+            link="",
+            status=status,
+        )
+        db_session.add(entry)
+
+    db_session.commit()
+
+    # Fetch "read" entries for feed 1
+    url = flask.url_for("get_feed_entries", feed_id=feed.id, status="read")
+    resp = client.get(url, headers=headers)
+    assert resp.status_code == 200
+    titles = {e["title"] for e in resp.json["entries"]}
+    assert titles == {"entry 1", "entry 2"}
+
+    # Fetch "unread" entries for feed 1
+    url = flask.url_for("get_feed_entries", feed_id=feed.id, status="unread")
+    resp = client.get(url, headers=headers)
+    assert resp.status_code == 200
+    titles = {e["title"] for e in resp.json["entries"]}
+    assert titles == {"entry 3", "entry 4"}
+
+
 def test_change_entry_status(db_session, client, test_user):
     another_user = database.User(username="another", password_hash="...")
     db_session.add(another_user)
