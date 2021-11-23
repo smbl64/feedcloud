@@ -4,5 +4,7 @@ sqlalchemy
 psycopg2-binary
 click
 flask-jwt-extended
-flasgger
 marshmallow
+flask-cors
+apispec[marshmallow]
+apispec-webframeworks
