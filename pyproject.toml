@@ -1,0 +1,4 @@
+[tool.isort]
+profile = "black"
+src_paths = ["feedcloud", "tests"]
+multi_line_output = 3
