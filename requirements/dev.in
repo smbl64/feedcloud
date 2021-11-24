@@ -1,4 +1,4 @@
--r prod.txt
+-r prod.in
 
 pytest
 pytest-cov
@@ -9,3 +9,4 @@ isort
 black
 black-macchiato
 pdbpp
+pip-tools
