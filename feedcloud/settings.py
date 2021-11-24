@@ -11,6 +11,8 @@ FEED_MAX_FAILURE_COUNT = 3
 
 IS_TESTING = False
 
+JWT_SECRET_KEY = "development!"
+
 
 def update_settings_from_env_vars() -> None:
     """
@@ -41,13 +43,17 @@ def update_settings_from_dict(new_values: Dict[str, Any]) -> None:
             continue
 
         # Ignore private and non-setting items
-        if key.startswith("_") or not key.isupper():
+        if _is_private(key):
             continue
 
         current_type = type(getattr(thismodule, key))
         value = _sanitize_value(value, current_type)
 
         setattr(thismodule, key, value)
+
+
+def _is_private(key: str) -> bool:
+    return key.startswith("_") or not key.isupper()
 
 
 def _sanitize_value(value: Any, current_type: Callable) -> Any:
@@ -61,3 +67,13 @@ def _sanitize_value(value: Any, current_type: Callable) -> Any:
             return False
 
     return current_type(value)
+
+
+def get_all_settings() -> dict:
+    """
+    Return all settings as a dictionary.
+    """
+    thismodule = sys.modules[__name__]
+    return {
+        key: getattr(thismodule, key) for key in dir(thismodule) if not _is_private(key)
+    }

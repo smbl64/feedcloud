@@ -13,16 +13,15 @@ from flask_jwt_extended import (
 )
 from marshmallow.exceptions import ValidationError
 
+from feedcloud import settings
+
 from . import exceptions, schemas, services
 
 app = flask.Flask(__name__)
+app.config.update(settings.get_all_settings())
+
 flask_cors.CORS(app)
-
-
-# TODO
-app.config["JWT_SECRET_KEY"] = "super-secret"
 jwt = JWTManager(app)
-
 spec = apispec.APISpec(
     title="FeedCloud",
     version="1.0.0",

@@ -18,7 +18,6 @@ if settings.IS_TESTING:
     broker.emit_after("process_boot")
     dramatiq.set_broker(broker)
 else:
-    logger.info("Using RabbitMQ broker")
     broker = RabbitmqBroker(url=settings.BROKER_URL)
     dramatiq.set_broker(broker)
 
@@ -49,4 +48,4 @@ def notify_user_on_failure(feed_id):
     """
     Simulate sending a notification to user about feed failure.
     """
-    logger.info("Feed {feed_id} failed. Notifying user...")
+    logger.info(f"Feed {feed_id} failed. Notifying user...")
