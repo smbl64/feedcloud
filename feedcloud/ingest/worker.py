@@ -1,7 +1,7 @@
 import datetime
 import logging
 import time
-from typing import Any, List
+from typing import Any, List, Optional
 
 import sqlalchemy.orm
 
@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class FeedWorker:
+    """
+    FeedWorker downloads the entries for a feed and saves them in the database.
+    It will also schedule the next run for a feed if required.
+    """
     def __init__(self, feed: database.Feed):
         self.feed = feed
 
@@ -77,40 +81,37 @@ class FeedWorker:
         session: sqlalchemy.orm.Session,
     ) -> None:
         FeedUpdateRun = database.FeedUpdateRun
-        run = (
+
+        # Find the last run
+        last_run = (
             session.query(FeedUpdateRun)
             .filter(FeedUpdateRun.feed_id == self.feed.id)
             .order_by(FeedUpdateRun.timestamp.desc())
             .first()
         )
 
-        failure_count = 1
-        if run is not None:
-            failure_count = run.failure_count + 1
+        if last_run is None or last_run.status != FeedUpdateRun.FAILED:
+            failure_count = 1
+        else:
+            failure_count = last_run.failure_count + 1
+
+        next_run_dt = calculate_next_run_time(
+            failure_count, settings.FEED_MAX_FAILURE_COUNT
+        )
 
         run = FeedUpdateRun(
             feed_id=self.feed.id,
             failure_count=failure_count,
             timestamp=datetime.datetime.now(),
             status=FeedUpdateRun.FAILED,
-            next_run_schedule=self._calculate_next_run_time(failure_count),
+            next_run_schedule=next_run_dt,
         )
-        print('adding')
         session.add(run)
 
-    def _calculate_next_run_time(self, failure_count: int) -> datetime.datetime:
-        min_seconds = 5
-        multiplier = 10
-        seconds = None
-        if failure_count < settings.FEED_MAX_FAILURE_COUNT:
-            seconds = min_seconds + multiplier * 2 ** failure_count
-
-        if seconds:
-            return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-        else:
-            return None
-
     def _make_datetime(self, dt_tuple: tuple) -> datetime.datetime:
+        """
+        Convert a datetime-tuple to a Python datetime.
+        """
         return datetime.datetime.fromtimestamp(time.mktime(dt_tuple))
 
     def does_entry_exist(self, session: sqlalchemy.orm.Session, entry_id: str) -> bool:
@@ -121,3 +122,24 @@ class FeedWorker:
         )
 
         return count != 0
+
+
+def calculate_next_run_time(
+    failure_count: int,
+    max_failure_count: int,
+    *,
+    min_seconds: int = 5,
+    multiplier: int = 10,
+    max_seconds: int = 3600,
+) -> Optional[datetime.datetime]:
+    """
+    Calculate the next running time using a exponential backoff formula.
+    """
+    seconds = None
+    if failure_count < max_failure_count:
+        seconds = min(min_seconds + multiplier * 2 ** failure_count, max_seconds)
+
+    if seconds:
+        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+    else:
+        return None

@@ -9,6 +9,8 @@ from feedcloud.worker import FeedWorker
 logger = logging.getLogger(__name__)
 
 
+# Setting max_retries to zero because FeedWorker and the Scheduler have
+# their own retry mechanism.
 @dramatiq.actor(max_retries=0)
 def download_feed(feed_id):
     logger.info(f"Downloading feed {feed_id}")

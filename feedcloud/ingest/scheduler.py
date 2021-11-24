@@ -12,16 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class Scheduler:
-    def __init__(self, sleep_duration: int = 3600):
-        self.sleep_duration = sleep_duration
-
     def start(self):
         while True:
             feeds = self.find_feeds()
             for feed in feeds:
                 tasks.download_feed.send(feed.id)
 
-            time.sleep(self.sleep_duration)
+            time.sleep(settings.TASK_SCHEDULER_INTERVAL_SECONDS)
 
     def find_feeds(self) -> List[Feed]:
         """
@@ -45,7 +42,7 @@ class Scheduler:
         # For each feed:
         #    There should be no last run OR
         #    a successful last run OR
-        #    a failed one which has a schedule date before now
+        #    a failed one which has a schedule date before 'now'
         query = (
             session.query(Feed, last_run)
             .outerjoin(last_run, Feed.id == last_run.c.feed_id)
