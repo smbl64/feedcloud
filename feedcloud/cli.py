@@ -20,6 +20,9 @@ def database_group():
 @database_group.command("init")
 @click.option("--delete-all", default=False, is_flag=True)
 def init_database(delete_all):
+    """
+    Create the tables on the database.
+    """
     if delete_all:
         click.echo("Deleting all exisiting tables and data...")
         database.drop_all()
