@@ -1,12 +1,14 @@
 import datetime
 import logging
 import time
-from typing import Any, List, Optional
+from typing import Any, Iterable, Optional
 
 import sqlalchemy.orm
 
 from feedcloud import database, settings
-from feedcloud.parser import FeedParser, ParseError
+
+from .parser import ParseError
+from .types import FeedDownloader, FeedEntry
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +18,14 @@ class FeedWorker:
     FeedWorker downloads the entries for a feed and saves them in the database.
     It will also schedule the next run for a feed if required.
     """
-    def __init__(self, feed: database.Feed):
+    def __init__(self, feed: database.Feed, downloader: FeedDownloader):
         self.feed = feed
+        self.downloader = downloader
 
     def start(self):
-        parser = FeedParser(self.feed.url)
         with database.get_session() as session:
             try:
-                entries = parser.get_entries()
+                entries = self.downloader(self.feed.url)
             except ParseError:
                 logger.exception("Failed to read entries from the feed")
                 self._save_failure_run(session)
@@ -33,25 +35,27 @@ class FeedWorker:
             self.save_entries(session, entries)
             session.commit()
 
-    def save_entries(self, session: sqlalchemy.orm.Session, entries: List[Any]) -> None:
+    def save_entries(
+        self, session: sqlalchemy.orm.Session, entries: Iterable[FeedEntry]
+    ) -> None:
         n_downloaded = 0
         n_ignored = 0
 
-        for entry_dict in entries:
-            if self.does_entry_exist(session, entry_dict.id):
+        for entry in entries:
+            if self.does_entry_exist(session, entry.id):
                 n_ignored += 1
                 continue
 
-            published_date = self._make_datetime(entry_dict.published_parsed)
-            entry = database.Entry(
+            published_date = self._make_datetime(entry.published_parsed)
+            db_entry = database.Entry(
                 feed_id=self.feed.id,
-                original_id=entry_dict.id,
-                title=entry_dict.title,
-                summary=entry_dict.description,
-                link=entry_dict.link,
+                original_id=entry.id,
+                title=entry.title,
+                summary=entry.description,
+                link=entry.link,
                 published_at=published_date
             )
-            session.add(entry)
+            session.add(db_entry)
             n_downloaded += 1
 
         self._save_success_run(

@@ -1,7 +1,7 @@
 import click
 
 from feedcloud import constants, database, helpers
-from feedcloud.worker import FeedWorker
+from feedcloud.ingest.worker import FeedWorker
 
 
 @click.group()

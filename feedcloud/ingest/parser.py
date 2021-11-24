@@ -1,18 +1,16 @@
-from typing import Any, List
+from typing import List
 
 import feedparser
 
+from .types import FeedEntry
 
-class FeedParser:
-    def __init__(self, url: str):
-        self.url = url
 
-    def get_entries(self) -> List[Any]:
-        result = feedparser.parse(self.url)
-        if result.bozo:
-            raise ParseError(f"Failed to read the feed: {str(result.bozo_exception)}")
+def download_entries(url: str) -> List[FeedEntry]:
+    result = feedparser.parse(url)
+    if result.bozo:
+        raise ParseError(f"Failed to read the feed: {str(result.bozo_exception)}")
 
-        return result.entries
+    return result.entries
 
 
 class ParseError(Exception):

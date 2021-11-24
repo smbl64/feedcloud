@@ -4,7 +4,9 @@ import dramatiq
 
 from feedcloud import database
 from feedcloud.database import Feed
-from feedcloud.worker import FeedWorker
+
+from .parser import download_entries
+from .worker import FeedWorker
 
 logger = logging.getLogger(__name__)
 
@@ -20,5 +22,5 @@ def download_feed(feed_id):
             logger.warn(f"Feed not found: feed_id={feed_id}")
             return
 
-        worker = FeedWorker(feed)
+        worker = FeedWorker(feed, downloader=download_entries)
         worker.start()
