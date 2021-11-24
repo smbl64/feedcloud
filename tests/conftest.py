@@ -1,3 +1,4 @@
+import dramatiq
 import pytest
 
 from feedcloud import api, database, helpers, settings
@@ -6,7 +7,10 @@ from feedcloud import api, database, helpers, settings
 @pytest.fixture(scope="session", autouse=True)
 def configure_settings():
     settings.update_settings_from_dict(
-        {"DATABASE_URL": "postgresql://test:test@localhost:5432/feedcloud"}
+        {
+            "DATABASE_URL": "postgresql://test:test@localhost:5432/feedcloud",
+            "IS_TESTING": True
+        }
     )
 
 
@@ -71,3 +75,18 @@ def test_user(db_session):
     db_session.commit()
 
     return user
+
+
+@pytest.fixture()
+def broker():
+    broker = dramatiq.get_broker()
+    broker.flush_all()
+    return broker
+
+
+@pytest.fixture()
+def stub_worker(broker):
+    worker = dramatiq.Worker(broker, worker_timeout=100)
+    worker.start()
+    yield worker
+    worker.stop()

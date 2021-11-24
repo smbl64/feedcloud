@@ -229,6 +229,49 @@ def unregister_feed(feed_id):
         return make_message("Feed not found"), 404
 
 
+@app.route("/feeds/<feed_id>/force-run", methods=["PUT"])
+@jwt_required()
+def force_run_feed(feed_id):
+    """
+    ---
+    put:
+        description: Force run a feed. Feed will be scheduled for running immediately.
+        parameters:
+            - in: path
+              name: feed_id
+              required: true
+              schema:
+                  type: integer
+              description: Numberic ID of the feed to run
+        responses:
+            200:
+                description: Feed successfully scheduled to be run
+                content:
+                    application/json:
+                        schema: MessageSchema
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            404:
+                description: Feed not found
+                content:
+                    application/json:
+                        schema: MessageSchema
+    """
+    username = get_jwt_identity()
+    try:
+        success = services.force_run_feed(username, feed_id)
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    if success:
+        return make_message("Accepted"), 200
+    else:
+        return make_message("Feed not found"), 404
+
+
 @app.route("/feeds/", methods=["GET"])
 @jwt_required()
 def get_feeds():
@@ -403,8 +446,10 @@ def create_swagger_spec():
 # Register endpoints with the API Spec
 with app.test_request_context():
     spec.path(view=authenticate)
+    spec.path(view=create_user)
     spec.path(view=register_feed)
     spec.path(view=unregister_feed)
+    spec.path(view=force_run_feed)
     spec.path(view=get_feeds)
     spec.path(view=get_feed_entries)
     spec.path(view=change_entry_status)

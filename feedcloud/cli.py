@@ -58,7 +58,6 @@ def create_normal_user(username: str, password: str) -> None:
     """
     Create a new user.
     """
-    print(password)
     create_user(username, password, is_admin=False)
 
 

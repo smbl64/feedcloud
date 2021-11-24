@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import sqlalchemy.orm
 
-from feedcloud import database, helpers
+from feedcloud import database, helpers, ingest
 from feedcloud.database import Entry, Feed, User
 
 from . import exceptions
@@ -27,7 +27,9 @@ def authenticate_user(username: str, password: str) -> bool:
         return helpers.check_password(password, user.password_hash)
 
 
-def create_new_user(current_username: str, username: str, password: str) -> bool:
+def create_new_user(
+    current_username: str, username: str, password: str, is_admin: bool = False
+) -> bool:
     with database.get_session() as session:
         user = find_user(current_username, session)
         if not user.is_admin:
@@ -37,7 +39,11 @@ def create_new_user(current_username: str, username: str, password: str) -> bool
         if new_user:
             return False
 
-        new_user = User(username=username, password_hash=helpers.hash_password(password))
+        new_user = User(
+            username=username,
+            password_hash=helpers.hash_password(password),
+            is_admin=is_admin,
+        )
         session.add(new_user)
         session.commit()
         return True
@@ -62,7 +68,7 @@ def register_feed(username: str, url: str) -> bool:
         return True
 
 
-def unregister_feed(username: str, feed_id: str) -> bool:
+def unregister_feed(username: str, feed_id: int) -> bool:
     with database.get_session() as session:
         user = find_user(username, session)
 
@@ -77,6 +83,23 @@ def unregister_feed(username: str, feed_id: str) -> bool:
 
         session.delete(feed)
         session.commit()
+        return True
+
+
+def force_run_feed(username: str, feed_id: int) -> bool:
+    with database.get_session() as session:
+        user = find_user(username, session)
+
+        feed = (
+            session.query(Feed)
+            .filter(Feed.id == feed_id, Feed.user_id == user.id)
+            .one_or_none()
+        )
+
+        if not feed:
+            return False
+
+        ingest.download_feed.send(feed.id)
         return True
 
 

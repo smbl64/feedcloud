@@ -2,6 +2,7 @@ import logging
 
 import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
+from dramatiq.brokers.stub import StubBroker
 
 from feedcloud import database, settings
 from feedcloud.database import Feed
@@ -11,8 +12,15 @@ from .worker import FeedWorker
 
 logger = logging.getLogger("feedcloud.Tasks")
 
-rabbitmq_broker = RabbitmqBroker(url=settings.BROKER_URL)
-dramatiq.set_broker(rabbitmq_broker)
+
+if settings.IS_TESTING:
+    broker = StubBroker(middleware=[])
+    broker.emit_after("process_boot")
+    dramatiq.set_broker(broker)
+else:
+    logger.info("Using RabbitMQ broker")
+    broker = RabbitmqBroker(url=settings.BROKER_URL)
+    dramatiq.set_broker(broker)
 
 
 # Setting max_retries to zero because FeedWorker and the Scheduler have

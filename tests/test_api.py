@@ -123,6 +123,24 @@ def test_unregister_feed(db_session, client, test_user):
     assert db_session.query(database.Feed).count() == 0
 
 
+def test_force_run_feed(db_session, client, test_user, broker, stub_worker):
+    headers = authenticate(client, test_user)
+
+    # Create the feed
+    feed = database.Feed(user_id=test_user.id, url="http://bla")
+    db_session.add(feed)
+    db_session.commit()
+
+    url = flask.url_for("force_run_feed", feed_id=feed.id)
+    resp = client.put(url, headers=headers)
+    assert resp.status_code == 200
+
+    broker.join("default")
+    stub_worker.join()
+
+    assert db_session.query(database.FeedUpdateRun).count() == 1
+
+
 def test_get_feeds(db_session, client, test_user):
     another_user = database.User(username="another", password_hash="...")
     db_session.add(another_user)

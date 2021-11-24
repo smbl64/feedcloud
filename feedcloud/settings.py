@@ -9,6 +9,8 @@ BROKER_URL = "amqp://guest:guest@127.0.0.1:5672"
 TASK_SCHEDULER_INTERVAL_SECONDS = 60
 FEED_MAX_FAILURE_COUNT = 3
 
+IS_TESTING = False
+
 
 def update_settings_from_env_vars() -> None:
     """
