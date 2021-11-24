@@ -8,7 +8,7 @@ import sqlalchemy.orm
 from feedcloud import database, settings
 
 from .parser import ParseError
-from .types import FeedDownloader, FeedEntry
+from .types import FailureNotifier, FeedDownloader, FeedEntry
 
 logger = logging.getLogger("feedcloud.FeedWorker")
 
@@ -18,9 +18,16 @@ class FeedWorker:
     FeedWorker downloads the entries for a feed and saves them in the database.
     It will also schedule the next run for a feed if required.
     """
-    def __init__(self, feed: database.Feed, downloader: FeedDownloader):
+    def __init__(
+        self,
+        feed: database.Feed,
+        downloader: FeedDownloader,
+        *,
+        failure_notifier: FailureNotifier = None
+    ):
         self.feed = feed
         self.downloader = downloader
+        self.failure_notifier = failure_notifier
 
     def start(self):
         with database.get_session() as session:
@@ -103,6 +110,9 @@ class FeedWorker:
             failure_count, settings.FEED_MAX_FAILURE_COUNT
         )
 
+        if not next_run_dt:
+            self._notify_user_about_failure()
+
         run = FeedUpdateRun(
             feed_id=self.feed.id,
             failure_count=failure_count,
@@ -117,6 +127,10 @@ class FeedWorker:
         Convert a datetime-tuple to a Python datetime.
         """
         return datetime.datetime.fromtimestamp(time.mktime(dt_tuple))
+
+    def _notify_user_about_failure(self):
+        if self.failure_notifier:
+            self.failure_notifier(self.feed.id)
 
     def does_entry_exist(self, session: sqlalchemy.orm.Session, entry_id: str) -> bool:
         count = (

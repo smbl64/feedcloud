@@ -113,7 +113,15 @@ def test_worker_saves_failed_feed_runs(db_session, test_user):
     db_session.add(feed)
     db_session.commit()
 
-    worker = FeedWorker(feed, parser.download_entries)
+    # This variable and function will be used to see if
+    # the worker sends failure notification to the user!
+    notification_feed_id = None
+
+    def failure_notifier(feed_id):
+        nonlocal notification_feed_id
+        notification_feed_id = feed_id
+
+    worker = FeedWorker(feed, parser.download_entries, failure_notifier=failure_notifier)
     for _ in range(settings.FEED_MAX_FAILURE_COUNT):
         worker.start()
 
@@ -125,6 +133,7 @@ def test_worker_saves_failed_feed_runs(db_session, test_user):
     assert len(runs) == 3
     assert runs[-1].next_run_schedule is None
     assert [r.failure_count for r in runs] == [1, 2, 3]
+    assert notification_feed_id == feed.id
 
 
 def test_scheduler_picks_correct_feeds(db_session, test_user):

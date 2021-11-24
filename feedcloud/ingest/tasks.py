@@ -34,7 +34,19 @@ def download_feed(feed_id):
             logger.warn(f"Feed not found: feed_id={feed_id}")
             return
 
-        worker = FeedWorker(feed, downloader=download_entries)
+        worker = FeedWorker(
+            feed,
+            downloader=download_entries,
+            failure_notifier=notify_user_on_failure.send,
+        )
         worker.start()
 
     logger.info(f"Finished processing feed {feed_id}")
+
+
+@dramatiq.actor(max_retries=3)
+def notify_user_on_failure(feed_id):
+    """
+    Simulate sending a notification to user about feed failure.
+    """
+    logger.info("Feed {feed_id} failed. Notifying user...")
