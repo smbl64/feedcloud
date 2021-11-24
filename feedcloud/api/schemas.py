@@ -13,7 +13,7 @@ class AuthResponseSchema(Schema):
     token = fields.String(required=True)
 
 
-class ErrorSchema(Schema):
+class MessageSchema(Schema):
     message = fields.String(required=True)
 
 
@@ -47,3 +47,7 @@ class EntryListSchema(Schema):
 
 class EntryStatusChangeRequestSchema(Schema):
     status = fields.String(required=True, validate=OneOf(database.Entry.STATUS_LIST))
+
+
+class MarshmallowErrorSchema(Schema):
+    errors = fields.Mapping(keys=fields.String(), values=fields.List(fields.String))

@@ -60,15 +60,17 @@ def test_unregister_feed(db_session, client, test_user):
     headers = authenticate(client, test_user)
 
     # 404; Feed doesn't exist yet
-    url = flask.url_for("unregister_feed")
+    url = flask.url_for("unregister_feed", feed_id=1)
     resp = client.delete(url, json=dict(url="http://bla"), headers=headers)
     assert resp.status_code == 404
 
     # Create the feed
-    db_session.add(database.Feed(user_id=test_user.id, url="http://bla"))
+    feed = database.Feed(user_id=test_user.id, url="http://bla")
+    db_session.add(feed)
     db_session.commit()
 
     # Try again
+    url = flask.url_for("unregister_feed", feed_id=feed.id)
     resp = client.delete(url, json=dict(url="http://bla"), headers=headers)
     assert resp.status_code == 200
     assert db_session.query(database.Feed).count() == 0

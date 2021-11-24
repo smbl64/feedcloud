@@ -46,13 +46,13 @@ def register_feed(username: str, url: str) -> bool:
         return True
 
 
-def unregister_feed(username: str, url: str) -> bool:
+def unregister_feed(username: str, feed_id: str) -> bool:
     with database.get_session() as session:
         user = find_user(username, session)
 
         feed = (
             session.query(Feed)
-            .filter(Feed.url == url, Feed.user_id == user.id)
+            .filter(Feed.id == feed_id, Feed.user_id == user.id)
             .one_or_none()
         )
 

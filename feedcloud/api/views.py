@@ -38,26 +38,30 @@ spec = apispec.APISpec(
 @app.route("/auth/", methods=["POST"])
 def authenticate():
     """
-    Authenticate with the API.
     ---
     post:
-        consumes:
-            application/json
+        description: Authenticate with the API
+        consumes: application/json
         parameters:
             - in: body
               required: true
               schema: AuthRequestSchema
         responses:
-          200:
-            description: Authentication successful
-            content:
-              application/json:
-                schema: AuthResponseSchema
-          401:
-            description: Invalid username or password
-            content:
-              application/json:
-                schema: ErrorSchema
+            200:
+                description: Authentication successful
+                content:
+                    application/json:
+                        schema: AuthResponseSchema
+            401:
+                description: Invalid username or password
+                content:
+                    application/json:
+                        schema: MessageSchema
+            400:
+                description: Invalid request
+                content:
+                    application/json:
+                        schema: MarshmallowErrorSchema
     """
     schema = schemas.AuthRequestSchema()
 
@@ -66,7 +70,7 @@ def authenticate():
         username = body["username"]
         password = body["password"]
     except ValidationError as err:
-        return flask.jsonify(err.messages), 400
+        return schemas.MarshmallowErrorSchema().dump(dict(errors=err.messages)), 400
 
     if not services.authenticate_user(username, password):
         return make_error("Invalid username or password")
@@ -76,19 +80,49 @@ def authenticate():
 
 
 def make_error(msg: str) -> Tuple[dict, int]:
-    resp_schema = schemas.ErrorSchema()
-    return resp_schema.dump({"message": msg}), 401
+    return make_message(msg), 401
+
+
+def make_message(msg: str) -> dict:
+    resp_schema = schemas.MessageSchema()
+    return resp_schema.dump({"message": msg})
 
 
 @app.route("/feeds/", methods=["POST"])
 @jwt_required()
 def register_feed():
+    """
+    ---
+    post:
+        description: Register a new feed
+        consumes: application/json
+        parameters:
+            - in: body
+              required: true
+              schema: MinimalFeedSchema
+        responses:
+            201:
+                description: Feed created successfully
+                content:
+                    application/json:
+                        schema: MessageSchema
+            409:
+                description: Feed already exists
+                content:
+                    application/json:
+                        schema: MessageSchema
+            400:
+                description: Invalid request
+                content:
+                    application/json:
+                        schema: MarshmallowErrorSchema
+    """
     schema = schemas.MinimalFeedSchema()
 
     try:
         body = schema.load(flask.request.json)
     except ValidationError as err:
-        return flask.jsonify(err.messages), 400
+        return schemas.MarshmallowErrorSchema().dump(dict(errors=err.messages)), 400
 
     username = get_jwt_identity()
     try:
@@ -97,36 +131,74 @@ def register_feed():
         return make_error(str(e))
 
     if created:
-        return "Created", 201
+        return make_message("Created"), 201
     else:
-        return "Feed already exists", 409
+        return make_message("Feed already exists"), 409
 
 
-@app.route("/feeds/", methods=["DELETE"])
+@app.route("/feeds/<feed_id>", methods=["DELETE"])
 @jwt_required()
-def unregister_feed():
-    schema = schemas.MinimalFeedSchema()
+def unregister_feed(feed_id):
+    """
+    ---
+    delete:
+        description: Unregister a feed. The feed and all its entries will be deleted.
+        parameters:
+            - in: path
+              name: feed_id
+              required: true
+              schema:
+                  type: integer
+              description: Numberic ID of the feed to delete
+        responses:
+            200:
+                description: Feed successfully deleted
+                content:
+                    application/json:
+                        schema: MessageSchema
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            404:
+                description: Feed not found
+                content:
+                    application/json:
+                        schema: MessageSchema
 
-    try:
-        body = schema.load(flask.request.json)
-    except ValidationError as err:
-        return flask.jsonify(err.messages), 400
-
+    """
     username = get_jwt_identity()
     try:
-        deleted = services.unregister_feed(username, body["url"])
+        deleted = services.unregister_feed(username, feed_id)
     except exceptions.AuthorizationFailedError as e:
         return make_error(str(e))
 
     if deleted:
-        return "", 200
+        return make_message("Feed is deleted"), 200
     else:
-        return "", 404
+        return make_message("Feed not found"), 404
 
 
 @app.route("/feeds/", methods=["GET"])
 @jwt_required()
 def get_feeds():
+    """
+    ---
+    get:
+        description: Get the list of all registered feeds.
+        responses:
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            200:
+                description: List of registered feeds
+                content:
+                    application/json:
+                        schema: FeedListSchema
+    """
     username = get_jwt_identity()
     try:
         feeds = services.get_feeds(username)
@@ -140,6 +212,35 @@ def get_feeds():
 @app.route("/feeds/<feed_id>/entries/", methods=["GET"])
 @jwt_required()
 def get_feed_entries(feed_id):
+    """
+    ---
+    get:
+        description: Get the list of entries in a feed.
+        parameters:
+            - in: path
+              name: feed_id
+              required: true
+              schema:
+                  type: integer
+              description: Feed ID to get the entries of
+            - in: query
+              name: status
+              required: false
+              schema:
+                  type: string
+              description: Filter by entry status. Can be 'read' or 'unread'.
+        responses:
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            200:
+                description: List of entries belonging to the feed
+                content:
+                    application/json:
+                        schema: EntryListSchema
+    """
     username = get_jwt_identity()
     status = flask.request.args.get("status")
 
@@ -155,12 +256,44 @@ def get_feed_entries(feed_id):
 @app.route("/entries/<entry_id>", methods=["PUT"])
 @jwt_required()
 def change_entry_status(entry_id):
+    """
+    ---
+    put:
+        description: Mark an entry as read or unread.
+        parameters:
+            - in: body
+              required: true
+              schema:
+                  EntryStatusChangeRequestSchema
+        responses:
+            400:
+                description: Invalid request
+                content:
+                    application/json:
+                        schema: MarshmallowErrorSchema
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            200:
+                description: Entry's status changed successfully
+                content:
+                    application/json:
+                        schema: MessageSchema
+            404:
+                description: Entry not found
+                content:
+                    application/json:
+                        schema: MessageSchema
+
+    """
     username = get_jwt_identity()
     schema = schemas.EntryStatusChangeRequestSchema()
     try:
         body = schema.load(flask.request.json)
     except ValidationError as err:
-        return flask.jsonify(err.messages), 400
+        return schemas.MarshmallowErrorSchema().dump(dict(errors=err.messages)), 400
 
     username = get_jwt_identity()
     try:
@@ -169,14 +302,37 @@ def change_entry_status(entry_id):
         return make_error(str(e))
 
     if changed:
-        return "", 200
+        return make_message("Status changed successfully"), 200
     else:
-        return "", 404
+        return make_message("Entry not found"), 404
 
 
 @app.route("/entries/", methods=["GET"])
 @jwt_required()
 def get_entries():
+    """
+    ---
+    get:
+        description: Get entries across all feeds.
+        parameters:
+            - in: query
+              name: status
+              required: false
+              schema:
+                  type: string
+              description: Filter by entry status. Can be 'read' or 'unread'.
+        responses:
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+            200:
+                description: List of entries belonging to the feed
+                content:
+                    application/json:
+                        schema: EntryListSchema
+    """
     username = get_jwt_identity()
     status = flask.request.args.get("status")
 
