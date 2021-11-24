@@ -11,7 +11,7 @@ Session = sessionmaker()
 
 class User(Base):
     __tablename__ = "user"
-    __tableargs__ = [sa.UniqueConstraint("username", name="username_idx")]
+    __table_args__ = (sa.UniqueConstraint("username", name="username_idx"),)
 
     id = sa.Column(sa.Integer, primary_key=True)
     username = sa.Column(sa.Text, nullable=False)
@@ -33,6 +33,34 @@ class Feed(Base):
     user = relationship("User", back_populates="feeds")
 
     entries = relationship("Entry", back_populates="feed", passive_deletes=True)
+    update_runs = relationship(
+        "FeedUpdateRun", back_populates="feed", passive_deletes=True
+    )
+
+
+class FeedUpdateRun(Base):
+    FAILED = "failed"
+    SUCCESS = "success"
+    STATUS_LIST = (FAILED, SUCCESS)
+
+    __tablename__ = "feed_update_run"
+    __table_args__ = (
+        sa.Index("feed_timestamp_idx", "feed_id", sa.desc("timestamp")),
+    )
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    timestamp = sa.Column(sa.DateTime, nullable=False)
+    status = sa.Column(sa.Text, nullable=False)
+    failure_count = sa.Column(sa.Integer, nullable=False, default=0)
+    next_run_schedule = sa.Column(sa.DateTime)
+
+    n_downloaded = sa.Column(sa.Integer, nullable=False, default=0)
+    n_ignored = sa.Column(sa.Integer, nullable=False, default=0)
+
+    feed_id = sa.Column(
+        sa.Integer, sa.ForeignKey("feed.id", ondelete="CASCADE"), nullable=False
+    )
+    feed = relationship("Feed", back_populates="update_runs")
 
 
 class Entry(Base):
@@ -41,9 +69,9 @@ class Entry(Base):
     STATUS_LIST = (UNREAD, READ)
 
     __tablename__ = "entry"
-    __tableargs__ = [
-        sa.UniqueConstraint("original_id", "feed_id", name="original_id_feed_idx")
-    ]
+    __table_args__ = (
+        sa.UniqueConstraint("original_id", "feed_id", name="original_id_feed_idx"),
+    )
 
     id = sa.Column(sa.Integer, primary_key=True)
 

@@ -70,16 +70,35 @@ def create_user(username: str, password: str, *, is_admin: bool) -> None:
         session.commit()
 
 
-# @cli.command()
-# def woot():
-#     with database.get_session() as session:
-#         user = database.User(username="foo", password_hash="bar")
-#         feed = database.Feed(url="https://www.nu.nl/rss/Algemeen", user=user)
-#         session.add(feed)
-#         session.commit()
-#         session.refresh(feed)
+@cli.command()
+def woot():
+    url = "https://www.nu.nl/rss/Algemeen"
+    url = "https://feeds.feedburner.com/tweakers/mixed"
+    url = "http://bad-url.xyz:1234"
+    # database.drop_all()
+    # database.create_all()
+    with database.get_session() as session:
+        user = (
+            session.query(database.User)
+            .filter(database.User.username == "foo")
+            .one_or_none()
+        )
+        if not user:
+            user = database.User(username="foo", password_hash="bar")
+            session.add(user)
+            session.flush()
 
-#     print(feed.url)
+        feed = (
+            session.query(database.Feed).filter(database.Feed.url == url).one_or_none()
+        )
+        if not feed:
+            feed = database.Feed(url=url, user=user)
+            session.add(feed)
 
-#     worker = FeedWorker(feed)
-#     worker.start()
+        session.commit()
+
+        session.refresh(feed)
+
+    print(feed.url)
+    worker = FeedWorker(feed)
+    worker.start()

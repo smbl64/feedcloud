@@ -5,6 +5,8 @@ from typing import Any, Callable, Dict
 from feedcloud import constants
 
 DATABASE_URL = ""
+TASK_SCHEDULER_INTERVAL_SECONDS = 10
+FEED_MAX_FAILURE_COUNT = 3
 
 
 def update_settings_from_env_vars() -> None:
