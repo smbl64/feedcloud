@@ -18,12 +18,13 @@ class FeedWorker:
     FeedWorker downloads the entries for a feed and saves them in the database.
     It will also schedule the next run for a feed if required.
     """
+
     def __init__(
         self,
         feed: database.Feed,
         downloader: FeedDownloader,
         *,
-        failure_notifier: FailureNotifier = None
+        failure_notifier: FailureNotifier = None,
     ):
         self.feed = feed
         self.downloader = downloader
@@ -60,7 +61,7 @@ class FeedWorker:
                 title=entry.title,
                 summary=entry.description,
                 link=entry.link,
-                published_at=published_date
+                published_at=published_date,
             )
             session.add(db_entry)
             n_downloaded += 1
@@ -72,11 +73,7 @@ class FeedWorker:
         )
 
     def _save_success_run(
-        self,
-        session: sqlalchemy.orm.Session,
-        *,
-        n_downloaded: int,
-        n_ignored: int
+        self, session: sqlalchemy.orm.Session, *, n_downloaded: int, n_ignored: int
     ) -> None:
         feed_update = database.FeedUpdateRun(
             feed_id=self.feed.id,

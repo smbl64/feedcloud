@@ -14,19 +14,29 @@ logger = logging.getLogger("feedcloud.Scheduler")
 
 
 class Scheduler:
-    def start(self):
+    """
+    Scheduler periodically finds feeds that need to be updated and
+    schedules them for download.
+
+    The actual download happens through the async workers in the background.
+    """
+
+    def run_forever(self):
         while True:
             try:
-                logger.info("Going to pick up feeds...")
-                feeds = self.find_feeds()
-                logger.info(f"Found {len(feeds)} feed(s).")
-
-                for feed in feeds:
-                    tasks.download_feed.send(feed.id)
+                self.run_once()
             except Exception:
-                logger.exception("Failure")
+                logger.exception("Scheduling failed.")
 
             time.sleep(settings.TASK_SCHEDULER_INTERVAL_SECONDS)
+
+    def run_once(self):
+        logger.info("Going to pick up feeds...")
+        feeds = self.find_feeds()
+        logger.info(f"Found {len(feeds)} feed(s).")
+
+        for feed in feeds:
+            tasks.download_feed.send(feed.id)
 
     def find_feeds(self) -> List[Feed]:
         """
@@ -60,7 +70,8 @@ class Scheduler:
                         last_run.c.status != FeedUpdateRun.FAILED,
                         sa.and_(
                             last_run.c.status == FeedUpdateRun.FAILED,
-                            last_run.c.next_run_schedule != None,  # noqa (Same with None)
+                            last_run.c.next_run_schedule
+                            != None,  # noqa (Same with None)
                             last_run.c.next_run_schedule < datetime.datetime.now(),
                         ),
                     )
@@ -72,4 +83,4 @@ class Scheduler:
 
 if __name__ == "__main__":
     scheduler = Scheduler()
-    scheduler.start()
+    scheduler.run_forever()

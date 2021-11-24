@@ -59,9 +59,7 @@ def test_create_new_user(db_session, client):
 
     # Now try to make a new user via our admin user
     headers = authenticate(client, admin, "admin")
-    resp = client.post(
-        url, json=dict(username="new", password="new"), headers=headers
-    )
+    resp = client.post(url, json=dict(username="new", password="new"), headers=headers)
     assert resp.status_code == 201
     assert resp.json["message"] == "Created"
 

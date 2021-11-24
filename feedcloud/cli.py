@@ -84,4 +84,4 @@ def run_scheduler():
     Run the feed scheduler.
     """
     scheduler = Scheduler()
-    scheduler.start()
+    scheduler.run_forever()

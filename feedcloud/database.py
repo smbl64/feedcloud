@@ -44,9 +44,7 @@ class FeedUpdateRun(Base):
     STATUS_LIST = (FAILED, SUCCESS)
 
     __tablename__ = "feed_update_run"
-    __table_args__ = (
-        sa.Index("feed_timestamp_idx", "feed_id", sa.desc("timestamp")),
-    )
+    __table_args__ = (sa.Index("feed_timestamp_idx", "feed_id", sa.desc("timestamp")),)
 
     id = sa.Column(sa.Integer, primary_key=True)
     timestamp = sa.Column(sa.DateTime, nullable=False)

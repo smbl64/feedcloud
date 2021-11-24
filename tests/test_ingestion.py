@@ -1,10 +1,13 @@
 import datetime
 import pathlib
+import time
 from typing import Iterable
 
 import pytest
 
+import feedcloud.ingest.worker
 from feedcloud import settings
+from feedcloud.api import services
 from feedcloud.database import Entry, Feed, FeedUpdateRun
 from feedcloud.ingest import parser
 from feedcloud.ingest.scheduler import Scheduler
@@ -16,6 +19,7 @@ class FakeDownloader:
     """
     A simple feed downloader which returns the given entries when the object is called.
     """
+
     def __init__(self, entries: Iterable[FeedEntry]):
         self.entries = entries
 
@@ -88,13 +92,18 @@ def test_worker_avoids_duplicates(db_session, test_user):
     assert len(db_entries) == 1
 
 
+def get_test_xml_file_path() -> str:
+    xml_file = pathlib.Path(__file__).parent / "rss_feed.xml"
+    file_path = str(xml_file.absolute())
+    return file_path
+
+
 def test_feed_parser_returns_items():
     """
     Parse the sample RSS file.
     This file is taken from: https://lorem-rss.herokuapp.com/feed
     """
-    xml_file = pathlib.Path(__file__).parent / "rss_feed.xml"
-    file_path = str(xml_file.absolute())
+    file_path = get_test_xml_file_path()
 
     # Note: `download_entries` uses the `feedparser` package which can
     # parse strings as well. But here we will pass the file path to
@@ -125,11 +134,7 @@ def test_worker_saves_failed_feed_runs(db_session, test_user):
     for _ in range(settings.FEED_MAX_FAILURE_COUNT):
         worker.start()
 
-    runs = (
-        db_session.query(FeedUpdateRun)
-        .order_by(FeedUpdateRun.timestamp)
-        .all()
-    )
+    runs = db_session.query(FeedUpdateRun).order_by(FeedUpdateRun.timestamp).all()
     assert len(runs) == 3
     assert runs[-1].next_run_schedule is None
     assert [r.failure_count for r in runs] == [1, 2, 3]
@@ -195,3 +200,63 @@ def test_scheduler_picks_correct_feeds(db_session, test_user):
         successful_feed.id,
         once_failed_feed.id,
     }
+
+
+def test_simulate_backoff_mechanism(
+    monkeypatch, db_session, client, test_user, broker, stub_worker
+):
+    feed = Feed(url="http://invalid-url:2323", user_id=test_user.id)
+    db_session.add(feed)
+    db_session.commit()
+
+    def fast_next_run_calc(failure_count: int, max_failure_count: int, **kwargs):
+        """
+        A faster alternative to the backoff calculator in the worker.
+        """
+        if failure_count >= max_failure_count:
+            return None
+
+        return datetime.datetime.now() + datetime.timedelta(
+            milliseconds=100 * failure_count
+        )
+
+    # Since waiting for seconds and minutes for the exponential backoff in a
+    # test is not feasible, we monkeypatch the logic and use milliseconds.
+    monkeypatch.setattr(
+        feedcloud.ingest.worker, "calculate_next_run_time", fast_next_run_calc
+    )
+
+    scheduler = Scheduler()
+
+    for _ in range(settings.FEED_MAX_FAILURE_COUNT):
+        scheduler.run_once()
+        broker.join("default")
+        stub_worker.join()
+        time.sleep(0.5)
+
+    max_runs = settings.FEED_MAX_FAILURE_COUNT
+    assert db_session.query(FeedUpdateRun).count() == max_runs
+
+    # Let's run the scheduler one more time. Since this feed is permanently failed,
+    # we expect to see no more FeedUpdateRuns
+    scheduler.run_once()
+    broker.join("default")
+    stub_worker.join()
+    assert db_session.query(FeedUpdateRun).count() == max_runs
+
+    # Now let's fix the feed and do a force-update. After a successful run, scheduler
+    # must schedule the feed again.
+    feed.url = get_test_xml_file_path()
+    db_session.add(feed)
+    db_session.commit()
+
+    services.force_run_feed(test_user.username, feed.id)
+    broker.join("default")
+    stub_worker.join()
+    assert db_session.query(FeedUpdateRun).count() == max_runs + 1
+
+    # See if scheduler re-schedules the feed
+    scheduler.run_once()
+    broker.join("default")
+    stub_worker.join()
+    assert db_session.query(FeedUpdateRun).count() == max_runs + 2

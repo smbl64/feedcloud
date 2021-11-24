@@ -9,7 +9,7 @@ def configure_settings():
     settings.update_settings_from_dict(
         {
             "DATABASE_URL": "postgresql://test:test@localhost:5432/feedcloud",
-            "IS_TESTING": True
+            "IS_TESTING": True,
         }
     )
 
