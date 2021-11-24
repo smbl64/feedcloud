@@ -234,7 +234,10 @@ def force_run_feed(feed_id):
     """
     ---
     put:
-        description: Force run a feed. Feed will be scheduled for running immediately.
+        description:
+            Force run a feed. Feed will be scheduled to be run immediately.
+            If the feed was stopped due to several failures before, this successful run
+            will cause the feed to be scheduled again automatically afterwards.
         parameters:
             - in: path
               name: feed_id
