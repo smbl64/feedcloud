@@ -116,15 +116,15 @@ def test_list_entries_for_a_feed(db_session, client, test_user):
     ]
     start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
 
-    for hours, (title, feed_id) in enumerate(entry_data):
+    for idx, (title, feed_id) in enumerate(entry_data):
         # Each entry is published 1 hour after the previous one
-        entry_date = start_dt + datetime.timedelta(hours=hours)
+        entry_date = start_dt + datetime.timedelta(hours=idx)
 
         entry = database.Entry(
             title=title,
             feed_id=feed_id,
             published_at=entry_date,
-            original_id="",
+            original_id="e-" + str(idx),
             summary="",
             link="",
         )
@@ -159,15 +159,15 @@ def test_filter_feed_entries_by_status(db_session, client, test_user):
     ]
     start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
 
-    for hours, (title, status) in enumerate(entry_data):
+    for idx, (title, status) in enumerate(entry_data):
         # Each entry is published 1 hour after the previous one
-        entry_date = start_dt + datetime.timedelta(hours=hours)
+        entry_date = start_dt + datetime.timedelta(hours=idx)
 
         entry = database.Entry(
             title=title,
             feed_id=feed.id,
             published_at=entry_date,
-            original_id="",
+            original_id="some-id" + str(idx),
             summary="",
             link="",
             status=status,
@@ -209,7 +209,7 @@ def test_change_entry_status(db_session, client, test_user):
         title="target entry",
         feed_id=feed.id,
         published_at=datetime.datetime.now(),
-        original_id="",
+        original_id="e-1",
         summary="",
         link="",
     )
@@ -217,7 +217,7 @@ def test_change_entry_status(db_session, client, test_user):
         title="unaccessible entry",
         feed_id=feed_another_user.id,  # <- belongs to another user
         published_at=datetime.datetime.now(),
-        original_id="",
+        original_id="e-2",
         summary="",
         link="",
     )
@@ -264,15 +264,15 @@ def test_get_all_entries(db_session, client, test_user):
     ]
     start_dt = datetime.datetime.now() - datetime.timedelta(days=1)
 
-    for hours, (title, feed_id, status) in enumerate(entry_data):
+    for idx, (title, feed_id, status) in enumerate(entry_data):
         # Each entry is published 1 hour after the previous one
-        entry_date = start_dt + datetime.timedelta(hours=hours)
+        entry_date = start_dt + datetime.timedelta(hours=idx)
 
         entry = database.Entry(
             title=title,
             feed_id=feed_id,
             published_at=entry_date,
-            original_id="",
+            original_id="e-" + str(idx),
             summary="",
             link="",
             status=status,

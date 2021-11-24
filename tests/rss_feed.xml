@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title><![CDATA[Lorem ipsum feed for an interval of 30 seconds with 10 item(s)]]></title>
+        <description><![CDATA[This is a constantly updating lorem ipsum feed]]></description>
+        <link>http://example.com/</link>
+        <generator>RSS for Node</generator>
+        <lastBuildDate>Wed, 24 Nov 2021 08:22:38 GMT</lastBuildDate>
+        <pubDate>Wed, 24 Nov 2021 08:22:30 GMT</pubDate>
+        <copyright><![CDATA[Michael Bertolacci, licensed under a Creative Commons Attribution 3.0 Unported License.]]></copyright>
+        <ttl>1</ttl>
+        <item>
+            <title><![CDATA[Lorem ipsum 2021-11-24T08:22:30Z]]></title>
+            <description><![CDATA[Sit nostrud eiusmod velit pariatur minim aliqua ut consectetur.]]></description>
+            <link>http://example.com/test/1637742150</link>
+            <guid isPermaLink="true">http://example.com/test/1637742150</guid>
+            <dc:creator><![CDATA[John Smith]]></dc:creator>
+            <pubDate>Wed, 24 Nov 2021 08:22:30 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Lorem ipsum 2021-11-24T08:22:00Z]]></title>
+            <description><![CDATA[Laboris magna aliqua ex ullamco cillum adipisicing reprehenderit proident magna cillum officia reprehenderit duis nostrud.]]></description>
+            <link>http://example.com/test/1637742120</link>
+            <guid isPermaLink="true">http://example.com/test/1637742120</guid>
+            <dc:creator><![CDATA[John Smith]]></dc:creator>
+            <pubDate>Wed, 24 Nov 2021 08:22:00 GMT</pubDate>
+        </item>        
+    </channel>
+</rss>

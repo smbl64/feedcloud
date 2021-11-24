@@ -1,7 +1,11 @@
 import datetime
+import pathlib
 from typing import Iterable
 
+import pytest
+
 from feedcloud import database
+from feedcloud.ingest import parser
 from feedcloud.ingest.types import FeedEntry
 from feedcloud.ingest.worker import FeedWorker
 
@@ -76,3 +80,23 @@ def test_worker_avoids_duplicates(db_session, test_user):
 
     db_entries = db_session.query(database.Entry).all()
     assert len(db_entries) == 1
+
+
+def test_feed_parser_returns_items():
+    """
+    Parse the sample RSS file.
+    This file is taken from: https://lorem-rss.herokuapp.com/feed
+    """
+    xml_file = pathlib.Path(__file__).parent / "rss_feed.xml"
+    file_path = str(xml_file.absolute())
+
+    # Note: `download_entries` uses the `feedparser` package which can
+    # parse strings as well. But here we will pass the file path to
+    # be more similar to a URL.
+    entries = parser.download_entries(file_path)
+    assert len(entries) == 2
+
+
+def test_feed_parses_reports_failures():
+    with pytest.raises(parser.ParseError):
+        parser.download_entries("http://some-invalid-url:23232")
