@@ -5,12 +5,11 @@ from typing import Iterable
 import pytest
 
 from feedcloud import database, settings
+from feedcloud.database import Entry, Feed, FeedUpdateRun
 from feedcloud.ingest import parser
 from feedcloud.ingest.scheduler import Scheduler
 from feedcloud.ingest.types import FeedEntry
 from feedcloud.ingest.worker import FeedWorker
-
-from feedcloud.database import Entry, Feed, FeedUpdateRun
 
 
 class FakeDownloader:
@@ -128,7 +127,7 @@ def test_worker_saves_failed_feed_runs(db_session, test_user):
     assert [r.failure_count for r in runs] == [1, 2, 3]
 
 
-def test_scheduler_find_correct_feeds(db_session, test_user):
+def test_scheduler_picks_correct_feeds(db_session, test_user):
     not_run_feed = Feed(url="not_run", user_id=test_user.id)
     successful_feed = Feed(url="successful", user_id=test_user.id)
     once_failed_feed = Feed(url="once_failed", user_id=test_user.id)

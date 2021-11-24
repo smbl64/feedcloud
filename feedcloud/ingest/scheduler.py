@@ -29,39 +29,39 @@ class Scheduler:
         This uses a LATERAL JOIN to find the last FeedUpdateRun for each
         feed and check the values there.
         """
-        session = database.get_session()
-        last_run_subq = (
-            session.query(FeedUpdateRun)
-            .filter(FeedUpdateRun.feed_id == Feed.id)
-            .order_by(FeedUpdateRun.timestamp.desc())
-            .limit(1)
-            .subquery()
-            .lateral()
-        )
+        with database.get_session() as session:
+            last_run_subq = (
+                session.query(FeedUpdateRun)
+                .filter(FeedUpdateRun.feed_id == Feed.id)
+                .order_by(FeedUpdateRun.timestamp.desc())
+                .limit(1)
+                .subquery()
+                .lateral()
+            )
 
-        last_run = sa.alias(last_run_subq, "last_run")
+            last_run = sa.alias(last_run_subq, "last_run")
 
-        # For each feed:
-        #    There should be no last run OR
-        #    a successful last run OR
-        #    a failed one which has a schedule date before 'now'
-        query = (
-            session.query(Feed, last_run)
-            .outerjoin(last_run, Feed.id == last_run.c.feed_id)
-            .filter(
-                sa.or_(
-                    last_run.c.id == None,  # noqa  ('is None' won't work here)
-                    last_run.c.status != FeedUpdateRun.FAILED,
-                    sa.and_(
-                        last_run.c.status == FeedUpdateRun.FAILED,
-                        last_run.c.next_run_schedule != None,  # noqa (Same with None)
-                        last_run.c.next_run_schedule < datetime.datetime.now(),
-                    ),
+            # For each feed:
+            #    There should be no last run OR
+            #    a successful last run OR
+            #    a failed one which has a schedule date before 'now'
+            query = (
+                session.query(Feed, last_run)
+                .outerjoin(last_run, Feed.id == last_run.c.feed_id)
+                .filter(
+                    sa.or_(
+                        last_run.c.id == None,  # noqa  ('is None' won't work here)
+                        last_run.c.status != FeedUpdateRun.FAILED,
+                        sa.and_(
+                            last_run.c.status == FeedUpdateRun.FAILED,
+                            last_run.c.next_run_schedule != None,  # noqa (Same with None)
+                            last_run.c.next_run_schedule < datetime.datetime.now(),
+                        ),
+                    )
                 )
             )
-        )
 
-        return [row[0] for row in query.all()]
+            return [row[0] for row in query.all()]
 
 
 if __name__ == "__main__":
