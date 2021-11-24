@@ -8,7 +8,7 @@ from feedcloud.database import Feed
 from .parser import download_entries
 from .worker import FeedWorker
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("feedcloud.Tasks")
 
 
 # Setting max_retries to zero because FeedWorker and the Scheduler have

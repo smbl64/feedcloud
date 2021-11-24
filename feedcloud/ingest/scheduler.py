@@ -10,13 +10,16 @@ from feedcloud.database import Feed, FeedUpdateRun
 
 from . import tasks
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("feedcloud.Scheduler")
 
 
 class Scheduler:
     def start(self):
         while True:
+            logger.info("Going to pick up feeds...")
             feeds = self.find_feeds()
+            logger.info(f"Found {len(feeds)} feed(s).")
+
             for feed in feeds:
                 tasks.download_feed.send(feed.id)
 

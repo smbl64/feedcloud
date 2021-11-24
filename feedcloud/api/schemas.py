@@ -38,6 +38,7 @@ class EntrySchema(Schema):
     link = fields.String()
     published_at = fields.DateTime()
     feed_id = fields.Integer()
+    status = fields.String()
 
 
 class EntryListSchema(Schema):

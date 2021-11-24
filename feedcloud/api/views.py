@@ -35,7 +35,7 @@ spec = apispec.APISpec(
 # spec.components.schema("ErrorSchema", schema=schemas.ErrorSchema)
 
 
-@app.route("/auth", methods=["POST"])
+@app.route("/auth/", methods=["POST"])
 def authenticate():
     """
     Authenticate with the API.
@@ -137,7 +137,7 @@ def get_feeds():
     return schema.dump(dict(feeds=feeds)), 200
 
 
-@app.route("/feeds/<feed_id>/entries", methods=["GET"])
+@app.route("/feeds/<feed_id>/entries/", methods=["GET"])
 @jwt_required()
 def get_feed_entries(feed_id):
     username = get_jwt_identity()
@@ -174,7 +174,7 @@ def change_entry_status(entry_id):
         return "", 404
 
 
-@app.route("/entries", methods=["GET"])
+@app.route("/entries/", methods=["GET"])
 @jwt_required()
 def get_entries():
     username = get_jwt_identity()

@@ -10,7 +10,7 @@ from feedcloud import database, settings
 from .parser import ParseError
 from .types import FeedDownloader, FeedEntry
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("feedcloud.FeedWorker")
 
 
 class FeedWorker:
