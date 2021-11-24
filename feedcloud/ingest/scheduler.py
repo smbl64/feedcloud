@@ -5,8 +5,10 @@ from typing import List
 
 import sqlalchemy as sa
 
-from feedcloud import database, settings, tasks
+from feedcloud import database, settings
 from feedcloud.database import Feed, FeedUpdateRun
+
+from . import tasks
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +54,7 @@ class Scheduler:
                     last_run.c.status != FeedUpdateRun.FAILED,
                     sa.and_(
                         last_run.c.status == FeedUpdateRun.FAILED,
+                        last_run.c.next_run_schedule != None,  # noqa (Same with None)
                         last_run.c.next_run_schedule < datetime.datetime.now(),
                     ),
                 )

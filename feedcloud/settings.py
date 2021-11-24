@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict
 from feedcloud import constants
 
 DATABASE_URL = ""
-TASK_SCHEDULER_INTERVAL_SECONDS = 10
+TASK_SCHEDULER_INTERVAL_SECONDS = 60
 FEED_MAX_FAILURE_COUNT = 3
 
 
