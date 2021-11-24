@@ -1,7 +1,7 @@
 import click
 
 from feedcloud import constants, database, helpers
-from feedcloud.ingest.worker import FeedWorker
+from feedcloud.ingest.scheduler import Scheduler
 
 
 @click.group()
@@ -11,6 +11,9 @@ def cli():
 
 @cli.group("database")
 def database_group():
+    """
+    Commands related to the database management.
+    """
     pass
 
 
@@ -29,6 +32,9 @@ def init_database(delete_all):
 
 @cli.group("user")
 def user_group():
+    """
+    Commands related to the user management.
+    """
     pass
 
 
@@ -71,34 +77,9 @@ def create_user(username: str, password: str, *, is_admin: bool) -> None:
 
 
 @cli.command()
-def woot():
-    url = "https://www.nu.nl/rss/Algemeen"
-    url = "https://feeds.feedburner.com/tweakers/mixed"
-    url = "http://bad-url.xyz:1234"
-    # database.drop_all()
-    # database.create_all()
-    with database.get_session() as session:
-        user = (
-            session.query(database.User)
-            .filter(database.User.username == "foo")
-            .one_or_none()
-        )
-        if not user:
-            user = database.User(username="foo", password_hash="bar")
-            session.add(user)
-            session.flush()
-
-        feed = (
-            session.query(database.Feed).filter(database.Feed.url == url).one_or_none()
-        )
-        if not feed:
-            feed = database.Feed(url=url, user=user)
-            session.add(feed)
-
-        session.commit()
-
-        session.refresh(feed)
-
-    print(feed.url)
-    worker = FeedWorker(feed)
-    worker.start()
+def run_scheduler():
+    """
+    Run the feed scheduler.
+    """
+    scheduler = Scheduler()
+    scheduler.start()

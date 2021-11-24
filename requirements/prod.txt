@@ -1,12 +1,13 @@
+apispec-webframeworks
+apispec[marshmallow]
+bcrypt
+click
+dramatiq[rabbitmq, watch]
 feedparser
 flask
-sqlalchemy
-psycopg2-binary
-click
-flask-jwt-extended
-marshmallow
 flask-cors
-apispec[marshmallow]
-apispec-webframeworks
-dramatiq[rabbitmq, watch]
-apscheduler
+flask-jwt-extended
+gunicorn
+marshmallow
+psycopg2-binary
+sqlalchemy

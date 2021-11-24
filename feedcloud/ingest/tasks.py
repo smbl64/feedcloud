@@ -1,14 +1,18 @@
 import logging
 
 import dramatiq
+from dramatiq.brokers.rabbitmq import RabbitmqBroker
 
-from feedcloud import database
+from feedcloud import database, settings
 from feedcloud.database import Feed
 
 from .parser import download_entries
 from .worker import FeedWorker
 
 logger = logging.getLogger("feedcloud.Tasks")
+
+rabbitmq_broker = RabbitmqBroker(url=settings.BROKER_URL)
+dramatiq.set_broker(rabbitmq_broker)
 
 
 # Setting max_retries to zero because FeedWorker and the Scheduler have
@@ -24,3 +28,5 @@ def download_feed(feed_id):
 
         worker = FeedWorker(feed, downloader=download_entries)
         worker.start()
+
+    logger.info(f"Finished processing feed {feed_id}")

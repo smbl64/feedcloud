@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict
 from feedcloud import constants
 
 DATABASE_URL = ""
+BROKER_URL = "amqp://guest:guest@127.0.0.1:5672"
 TASK_SCHEDULER_INTERVAL_SECONDS = 60
 FEED_MAX_FAILURE_COUNT = 3
 

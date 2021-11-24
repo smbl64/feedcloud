@@ -16,12 +16,15 @@ logger = logging.getLogger("feedcloud.Scheduler")
 class Scheduler:
     def start(self):
         while True:
-            logger.info("Going to pick up feeds...")
-            feeds = self.find_feeds()
-            logger.info(f"Found {len(feeds)} feed(s).")
+            try:
+                logger.info("Going to pick up feeds...")
+                feeds = self.find_feeds()
+                logger.info(f"Found {len(feeds)} feed(s).")
 
-            for feed in feeds:
-                tasks.download_feed.send(feed.id)
+                for feed in feeds:
+                    tasks.download_feed.send(feed.id)
+            except Exception:
+                logger.exception("Failure")
 
             time.sleep(settings.TASK_SCHEDULER_INTERVAL_SECONDS)
 
