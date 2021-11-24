@@ -4,7 +4,7 @@ from marshmallow.validate import OneOf
 from feedcloud import database
 
 
-class AuthRequestSchema(Schema):
+class UserSchema(Schema):
     username = fields.String(required=True)
     password = fields.String(required=True)
 

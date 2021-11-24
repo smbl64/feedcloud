@@ -30,10 +30,6 @@ spec = apispec.APISpec(
     plugins=[FlaskPlugin(), MarshmallowPlugin()],
 )
 
-# spec.components.schema("AuthRequestSchema", schema=schemas.AuthRequestSchema)
-# spec.components.schema("AuthResponseSchema", schema=schemas.AuthResponseSchema)
-# spec.components.schema("ErrorSchema", schema=schemas.ErrorSchema)
-
 
 @app.route("/auth/", methods=["POST"])
 def authenticate():
@@ -45,7 +41,7 @@ def authenticate():
         parameters:
             - in: body
               required: true
-              schema: AuthRequestSchema
+              schema: UserSchema
         responses:
             200:
                 description: Authentication successful
@@ -63,7 +59,7 @@ def authenticate():
                     application/json:
                         schema: MarshmallowErrorSchema
     """
-    schema = schemas.AuthRequestSchema()
+    schema = schemas.UserSchema()
 
     try:
         body = schema.load(flask.request.json)
@@ -86,6 +82,59 @@ def make_error(msg: str) -> Tuple[dict, int]:
 def make_message(msg: str) -> dict:
     resp_schema = schemas.MessageSchema()
     return resp_schema.dump({"message": msg})
+
+
+@app.route("/users/", methods=["POST"])
+@jwt_required()
+def create_user():
+    """
+    ---
+    post:
+        description: Create a new feed
+        consumes: application/json
+        parameters:
+            - in: body
+              required: true
+              schema: UserSchema
+        responses:
+            201:
+                description: User created successfully
+                content:
+                    application/json:
+                        schema: MessageSchema
+            409:
+                description: User already exists
+                content:
+                    application/json:
+                        schema: MessageSchema
+            400:
+                description: Invalid request
+                content:
+                    application/json:
+                        schema: MarshmallowErrorSchema
+            401:
+                description: Unauthorized access
+                content:
+                    application/json:
+                        schema: MessageSchema
+    """
+    schema = schemas.UserSchema()
+
+    try:
+        body = schema.load(flask.request.json)
+    except ValidationError as err:
+        return schemas.MarshmallowErrorSchema().dump(dict(errors=err.messages)), 400
+
+    username = get_jwt_identity()
+    try:
+        created = services.create_new_user(username, body["username"], body["password"])
+    except exceptions.AuthorizationFailedError as e:
+        return make_error(str(e))
+
+    if created:
+        return make_message("Created"), 201
+    else:
+        return make_message("User already exists"), 409
 
 
 @app.route("/feeds/", methods=["POST"])

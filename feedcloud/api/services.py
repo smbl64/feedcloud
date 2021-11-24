@@ -27,6 +27,22 @@ def authenticate_user(username: str, password: str) -> bool:
         return helpers.check_password(password, user.password_hash)
 
 
+def create_new_user(current_username: str, username: str, password: str) -> bool:
+    with database.get_session() as session:
+        user = find_user(current_username, session)
+        if not user.is_admin:
+            raise exceptions.AuthorizationFailedError("Only admins can add new users")
+
+        new_user = session.query(User).filter(User.username == username).one_or_none()
+        if new_user:
+            return False
+
+        new_user = User(username=username, password_hash=helpers.hash_password(password))
+        session.add(new_user)
+        session.commit()
+        return True
+
+
 def register_feed(username: str, url: str) -> bool:
     with database.get_session() as session:
         user = find_user(username, session)

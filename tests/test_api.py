@@ -2,7 +2,7 @@ import datetime
 
 import flask
 
-from feedcloud import database
+from feedcloud import database, helpers
 
 
 def test_authenticate_user(client, test_user):
@@ -29,11 +29,58 @@ def test_authenticate_user(client, test_user):
     assert "token" in resp.json
 
 
-def authenticate(client, user):
+def test_create_new_user(db_session, client):
+    normal_user = database.User(
+        username="normal", password_hash=helpers.hash_password("normal"), is_admin=False
+    )
+    alice = database.User(
+        username="alice", password_hash=helpers.hash_password("alice"), is_admin=False
+    )
+    admin = database.User(
+        username="admin", password_hash=helpers.hash_password("admin"), is_admin=True
+    )
+    db_session.add_all([normal_user, alice, admin])
+    db_session.commit()
+
+    url = flask.url_for("create_user")
+
+    # Try to make a new user via our normal user
+    headers = authenticate(client, normal_user, "normal")
+    resp = client.post(url, json=dict(username="bob", password="bob"), headers=headers)
+    assert resp.status_code == 401
+
+    # Try to make a 'alice' via our admin user
+    headers = authenticate(client, admin, "admin")
+    resp = client.post(
+        url, json=dict(username="alice", password="alice"), headers=headers
+    )
+    assert resp.status_code == 409
+    assert resp.json["message"] == "User already exists"
+
+    # Now try to make a new user via our admin user
+    headers = authenticate(client, admin, "admin")
+    resp = client.post(
+        url, json=dict(username="new", password="new"), headers=headers
+    )
+    assert resp.status_code == 201
+    assert resp.json["message"] == "Created"
+
+    new_user = (
+        db_session.query(database.User)
+        .filter(database.User.username == "new")
+        .one_or_none()
+    )
+
+    assert new_user is not None
+    assert new_user.username == "new"
+    assert not new_user.is_admin
+
+
+def authenticate(client, user, password: str = "test"):
     url = flask.url_for("authenticate")
     resp = client.post(
         url,
-        json=dict(username=user.username, password="test"),
+        json=dict(username=user.username, password=password),
     )
     assert resp.status_code == 200
     token = resp.json["token"]

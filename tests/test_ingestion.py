@@ -4,7 +4,7 @@ from typing import Iterable
 
 import pytest
 
-from feedcloud import database, settings
+from feedcloud import settings
 from feedcloud.database import Entry, Feed, FeedUpdateRun
 from feedcloud.ingest import parser
 from feedcloud.ingest.scheduler import Scheduler
