@@ -23,6 +23,9 @@ class User(Base):
 
 class Feed(Base):
     __tablename__ = "feed"
+    __table_args__ = (
+        sa.UniqueConstraint("url", "user_id", name="url_user_id_idx"),
+    )
 
     id = sa.Column(sa.Integer, primary_key=True)
     url = sa.Column(sa.Text, nullable=False)
