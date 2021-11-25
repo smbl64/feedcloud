@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -ux
+
+# Run every command but exit with non-zero status if 
+# any of them failed.
+err=0
+
+black --check . || ((err=1))
+flake8 || ((err=1))
+
+exit $err
