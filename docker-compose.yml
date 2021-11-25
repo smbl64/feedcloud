@@ -7,8 +7,6 @@ services:
       - POSTGRES_USER=test
       - POSTGRES_PASSWORD=test
       - POSTGRES_DB=feedcloud
-    volumes:
-      - ./data/postgres:/var/lib/postgres/data
     ports:
       - "5432:5432"
 
